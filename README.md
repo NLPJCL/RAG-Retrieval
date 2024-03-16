@@ -95,7 +95,7 @@ bash train_reranker.sh
 
 ## 用领域内数据微调开源的BGE系列模型
 
-|      **Model**  | **T2ranking**  | vary
+|      **Model**  | **T2ranking**  | |
 |:-----------: |:----------:|:----------:|
 |   bge-v1.5-embedding   | 66.49|  | 
 |   bge-v1.5-embedding **finetune**    | 67.15 | **+0.66** | 
@@ -103,6 +103,7 @@ bash train_reranker.sh
 |   bge-m3-colbert **finetune**    | 67.22 | **+0.40** | 
 |   bge-reranker-base   | 67.28|  | 
 |   bge-reranker-base  **finetune**    | 67.57 | **+0.29** | 
+
 后面带有finetune的代表我们使用RAG-Retrieval在对应开源模型的基础上继续微调所得，训练数据使用T2-Reranking的训练集。
 
 ## License
