@@ -1,9 +1,9 @@
 <h1 align="center">RAG-Retrieval</h1>
 <p align="center">
-    <a href="https://github.com/FlagOpen/FlagEmbedding">
+    <a href="https://github.com/NLPJCL/RAG-Retrieval">
             <img alt="Build" src="https://img.shields.io/badge/Contribution-Welcome-blue">
     </a>
-    <a href="https://github.com/FlagOpen/FlagEmbedding/blob/master/LICENSE">
+    <a href="https://github.com/NLPJCL/RAG-Retrieval/blob/master/LICENSE">
         <img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-green">
     </a>
 </p>
