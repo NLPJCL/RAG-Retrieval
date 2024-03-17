@@ -18,7 +18,7 @@
 
 RAG-Retrieval 提供了全链路的RAG检索微调代码，支持微调任意开源的RAG检索模型，包括向量（embedding、图a）、迟交互式模型（colbert、图d）、交互式模型（cross encoder、图c）。
 ![ColBERT](pictures/models.png)
-# 新闻
+# 最新更新
 
 - 3/18/2024:发布RAG-Retrieval [RAG-Retrieval知乎介绍](https://zhuanlan.zhihu.com/p/683483778)
 
