@@ -21,9 +21,9 @@ RAG-Retrieval 提供了全链路的RAG检索微调代码，支持微调任意开
 
 # 创建环境
     
-```
+```bash
 conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
-为了避免自动安装的torch与已经安装的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
+#为了避免自动安装的torch与本地的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
 pip install -r requirements.txt 
 ```
 
