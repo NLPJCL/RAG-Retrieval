@@ -16,17 +16,14 @@
     <p>
 </h4>
 
-RAG-Retrieval 提供了全链路的RAG的检索微调代码，支持微调任意开源的RAG检索模型，包括向量（embedding）、迟交互式模型（colbert）、交互式模型（corss encoder）。
+RAG-Retrieval 提供了全链路的RAG检索微调代码，支持微调任意开源的RAG检索模型，包括向量（embedding、图a）、迟交互式模型（colbert、图d）、交互式模型（cross encoder、图c）。
+![ColBERT](pictures/models.png)
 
 # 创建环境
     
 ```
 conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
 pip install -r requirements.txt 
-```
-Configure `wandb`
-```bash
-wandb login
 ```
 
 
