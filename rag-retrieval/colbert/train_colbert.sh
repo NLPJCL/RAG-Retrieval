@@ -13,8 +13,8 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../config/d
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
 --dataset "../../example_data/t2rank_100.json" \
 --output_dir "./output/t2ranking_100_example" \
---batch_size 8 \
---lr 5e-5 \
+--batch_size 4 \
+--lr 5e-6 \
 --epochs 2 \
 --save_on_epoch_end 1 \
 --gradient_accumulation_steps 12 \
