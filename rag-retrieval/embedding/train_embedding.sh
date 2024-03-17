@@ -10,9 +10,9 @@ if [ ! -d "./logs" ]; then
     echo "mkdir logs"
 fi
 
-# reberta pretrain softmax loss(bge的数据)
+
 CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../config/default_fsdp.yaml train_embedding.py  \
---model_name_or_path "hfl/chinese-roberta-wwm-ext" \
+--model_name_or_path "BAAI/bge-base-zh-v1.5" \
 --dataset "../../example_data/t2rank_100.json" \
 --output_dir "./output/t2ranking_100_example" \
 --batch_size 8 \

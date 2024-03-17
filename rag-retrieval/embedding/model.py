@@ -219,6 +219,7 @@ def test_model_embedding():
     input_lst = ['我喜欢中国']
     
     embedding = embedding.encode(input_lst,device=cuda_device)
+
     print(embedding.tolist())
 
 if __name__ == "__main__":
