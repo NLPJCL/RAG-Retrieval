@@ -78,7 +78,7 @@ bash train_reranker.sh
 |      **Model**       |  **Model Size(GB)**  |**T2Reranking** | **MMarcoReranking** | **CMedQAv1** | **CMedQAv2** | **Avg** |
 |:-----------:|:----------:|:----------:|:-------------:|:--------------:|:---------------:| :---------------:|
 |   bge-reranker-base   |  1.11 | 67.28    |      35.46     |      81.27      |       84.10      | 67.03
-| bce-reranker-base_v1 |   0.41 |70.25    |      34.13     |      79.64      |       81.31      | 66.33
+| bce-reranker-base_v1 |   1.11 |70.25    |      34.13     |      79.64      |       81.31      | 66.33
 | rag-retrieval-reranker |  0.41 | 67.33    |      31.57     |      83.54     |       86.03     | 67.12
 
 其中，rag-retrieval-reranker是我们使用RAG-Retrieval代码在hfl/chinese-roberta-wwm-ext模型上训练所得，训练数据使用bge-rerank模型的训练数据.
