@@ -52,7 +52,7 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../config/d
 
 对于保存的模型，会按照sentence-transformers的格式去保存，因此你可以很容易加载模型来进行预测。
 
-在model.py里，我们给了一个示例如何加载以及预测模型。
+在model.py里，我们给了一个示例如何加载以及预测。
 
 
 ```python
