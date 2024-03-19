@@ -71,6 +71,7 @@ bash train_reranker.sh
 
 # 实验结果
 
+说明：结果仅供参考，训练模型只是为了验证RAG-Retrieval的训练代码是否正确。相比的两个模型，都是很好的开源模型。而且他们都是多语言模型，而笔者训练的模型仅仅支持中文。
 
 ## reranker模型在 MTEB Reranking 任务的结果
 
