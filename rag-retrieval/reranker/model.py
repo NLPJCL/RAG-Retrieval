@@ -22,15 +22,15 @@ class CrossEncoder(nn.Module):
 
     def forward(self, batch, labels = None):
         
-        output = self.model(**batch,labels=labels)
+        output = self.model(**batch)
 
         if labels is not None:
 
             logits = output.logits
             if self.loss_type=='regression':
                 
-                logits=torch.sigmoid(logits)
-                loss_fct =  MSELoss()
+                logits = torch.sigmoid(logits)
+                loss_fct = MSELoss()
                 loss = loss_fct(logits.squeeze(),labels.squeeze())
 
             elif self.loss_type=='classfication':

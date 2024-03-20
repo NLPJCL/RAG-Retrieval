@@ -2,14 +2,10 @@ import torch
 import torch.nn as nn 
 import torch.nn.functional as F
 from transformers import (
-    BertPreTrainedModel,
     AutoModel,
     AutoTokenizer,
 )
-import string
-from torch.nn import CrossEntropyLoss, MSELoss, BCEWithLogitsLoss
 import os
-import numpy as np
 from tqdm import tqdm 
 
 
@@ -79,7 +75,7 @@ class ColBERT(nn.Module):
         neg_doc_input_ids = None, # [batch_size*neg_nums,seq_len]
         neg_doc_attention_mask = None, # [batch_size*neg_nums,seq_len]
     ):  
-        #[batch_size,seq_len,768]
+        #[batch_size,seq_len,dim]
         query_embedding = self.get_embedding(query_input_ids,query_attention_mask)
         pos_doc_embedding = self.get_embedding(pos_doc_input_ids,pos_doc_attention_mask)
 
@@ -93,7 +89,7 @@ class ColBERT(nn.Module):
 
             neg_doc_embedding = self.get_embedding(neg_doc_input_ids,neg_doc_attention_mask) 
             #[batch_size,batch_size*neg_nums]
-            #[batch_size,1,seq_len,768],[1,batch_size*neg_nums,seq_len,768]
+            #[batch_size,1,seq_len,dim],[1,batch_size*neg_nums,seq_len,dim]
             neg_score = self.score(query_embedding.unsqueeze(1),neg_doc_embedding.unsqueeze(0),query_attention_mask)
 
             loss_fct = nn.CrossEntropyLoss()
