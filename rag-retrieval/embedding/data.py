@@ -41,7 +41,7 @@ class EmbeddingDataset(Dataset):
                         temp_dic = {}
                         temp_dic['query'] = data_dic['query']
                         temp_dic['pos'] = text_pos
-
+                        train_data.append(temp_dic)
                 elif 'pos' in data_dic and 'neg'  in data_dic:
                     for text_pos in data_dic['pos']:
                         temp_dic = {}
@@ -53,8 +53,7 @@ class EmbeddingDataset(Dataset):
                         else:
                             temp_dic['neg'] = random.sample(data_dic['neg'], self.neg_nums )
 
-
-                train_data.append(temp_dic)
+                        train_data.append(temp_dic)
 
         return train_data
     
