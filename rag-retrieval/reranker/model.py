@@ -22,7 +22,7 @@ class CrossEncoder(nn.Module):
 
     def forward(self, batch, labels = None):
         
-        output = self.model(**batch)
+        output = self.model(**batch,labels=labels)
 
         if labels is not None:
 
