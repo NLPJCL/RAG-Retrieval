@@ -54,14 +54,12 @@ class Embedding(nn.Module):
         #only pos pair loss
         if pos_doc_input_ids is not None and neg_doc_input_ids is None :  
 
-            loss_fct = nn.CrossEntropyLoss()
             pos_doc_embeddings = self.get_embedding(pos_doc_input_ids,pos_doc_attention_mask)
             res_dict['loss'] = self.pair_inbatch_softmax_loss(query_embeddings,pos_doc_embeddings)
 
         # both pos and neg triplet loss
         elif pos_doc_input_ids is not None and neg_doc_input_ids is not None:
 
-            loss_fct = nn.CrossEntropyLoss()
             pos_doc_embeddings = self.get_embedding(pos_doc_input_ids,pos_doc_attention_mask)
             neg_doc_embeddings = self.get_embedding(neg_doc_input_ids,neg_doc_attention_mask)
             res_dict['loss'] = self.triplet_inbatch_softmax_loss(query_embeddings,pos_doc_embeddings,neg_doc_embeddings )
@@ -74,7 +72,7 @@ class Embedding(nn.Module):
     ):
         
         loss_fct = nn.CrossEntropyLoss()
-        #[batch_size,batch_size]=[batch_size,dim],[batch_size,dim]
+        #[batch_size,batch_size]=[batch_size,dim],[dim,batch_size]
         sim_matrix = query_embeddings @ pos_doc_embeddings.unsqueeze.transpose(-1,-2)
         sim_matrix = sim_matrix / self.temperature
         #[batch_size]
@@ -85,11 +83,11 @@ class Embedding(nn.Module):
     def triplet_inbatch_softmax_loss(self,
         query_embeddings,   #[batch_size,dim]
         pos_doc_embeddings, #[batch_size,dim]
-        neg_doc_embeddings, #[batch_size*groneg_numsupt_size,dim]
+        neg_doc_embeddings, #[batch_size*neg_nums,dim]
     ):
         loss_fct = nn.CrossEntropyLoss()
 
-        #[batch_size] <- [batch_size,dim],[dim,batch_size]        
+        #[batch_size] <- [batch_size,dim],[batch_size,dim]        
         pos_sim_matrix = torch.sum(query_embeddings * pos_doc_embeddings, dim=-1)
 
         #[batch_size,1,batch_size*neg_nums] <- [batch_size,1,dim],[1,batch_size*neg_nums,dim]
@@ -111,7 +109,7 @@ class Embedding(nn.Module):
         sentences,
         device = 'cpu',
         max_len = 512,
-        batch_size=512,
+        batch_size = 512,
     ):
         self.device = device
         self.to(self.device)
