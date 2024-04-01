@@ -20,6 +20,7 @@ query\tdoc\tlabel
 
 
 # 训练
+执行bash train_reranker.sh即可，下面是train_reranker.sh执行的代码。
 
 ```bash
  CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../config/xlmroberta_default_config.yaml train_reranker.py  \

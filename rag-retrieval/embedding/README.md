@@ -18,6 +18,8 @@
 
 # 训练
 
+执行bash train_embedding.sh即可，下面是train_embedding.sh执行的代码。
+
 ```bash
 CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../config/default_fsdp.yaml train_embedding.py  \
 --model_name_or_path "BAAI/bge-base-zh-v1.5" \
