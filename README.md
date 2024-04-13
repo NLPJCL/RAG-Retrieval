@@ -107,5 +107,9 @@ bash train_reranker.sh
 
 后面带有finetune的代表我们使用RAG-Retrieval在对应开源模型的基础上继续微调所得，训练数据使用T2-Reranking的训练集。
 
+# Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=NLPJCL/RAG-Retrieval&type=Date)](https://star-history.com/#NLPJCL/RAG-Retrieval&Date)
+
 ## License
 RAG-Retrieval is licensed under the [MIT License](https://github.com/NLPJCL/RAG-Retrieval/blob/master/LICENSE). 
