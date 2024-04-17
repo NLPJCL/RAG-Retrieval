@@ -1,0 +1,60 @@
+
+[build-system]
+requires = ["setuptools"] 
+build-backend = "setuptools.build_meta" 
+
+[tool.setuptools]
+packages = [
+    "rag_retrieval",
+    "rag_retrieval.reranker_models",
+]
+
+[project]
+name = "rag_retrieval" 
+
+
+version = "0.1.1"
+
+description = "A unified API for various RAG Retrieval  re-ranking models."
+
+readme = "README.md"
+
+requires-python = ">=3.8"
+
+license = {file = "LICENSE"}
+
+keywords = ["reranking", "retrieval", "rag", "nlp"]
+
+authors = [
+  {name = "A grass in the car", email = "suda.jcli@qq.com" }
+]
+maintainers = [
+  {name = "A grass in the car", email = "suda.jcli@qq.com" }
+]
+
+classifiers = [
+  # Specify the Python versions you support here. In particular, ensure
+  # that you indicate you support Python 3. These classifiers are *not*
+  # checked by "pip install". See instead "requires-python" key in this file.
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+dependencies = [
+  "pydantic",
+  "tqdm",
+]
+
+[project.optional-dependencies]
+all = ["transformers", "torch", "requests"]
+transformers = ["transformers", "torch",]
+api = ["requests"]
+dev = ["pytest"]
+
+[project.urls]
+"Homepage" = "https://github.com/NLPJCL/RAG-Retrieval"
