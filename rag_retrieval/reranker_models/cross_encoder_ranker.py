@@ -1,14 +1,14 @@
 
+
 from typing import Union, List, Optional, Tuple
 from .ranker import BaseRanker
-
+from .result import RankedResults, Result
+from copy import deepcopy
 from .utils import get_device,get_dtype,vprint
 import tqdm
 
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from copy import deepcopy
-from .result import RankedResults, Result
 
 class CorssEncoderRanker(BaseRanker):
     def __init__(self, 
@@ -44,8 +44,6 @@ class CorssEncoderRanker(BaseRanker):
         max_length: int = 512,
         enable_tqdm: bool = True,
     ):
-        if self.num_gpus > 0:
-            batch_size = batch_size * self.num_gpus
         
         all_scores = []
         for start_index in tqdm.tqdm(range(0, len(sentence_pairs), batch_size), desc="Compute Scores",
