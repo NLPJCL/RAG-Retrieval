@@ -1,9 +1,10 @@
 from typing import Optional
 
-from rag_retrieval.reranker_models import AVAILABLE_RANKERS
+from rag_retrieval.infer.reranker_models import AVAILABLE_RANKERS
 import os 
 
 os.environ.setdefault('TRANSFORMERS_NO_ADVISORY_WARNINGS', '1')
+
 
 
 DEFAULTS_MODEL_CLASS_TYPE={
@@ -21,6 +22,7 @@ DEFAULTS_MODEL_TYPE={
 DEPS_MAPPING = {
     "CorssEncoderRanker": "transformers",
     "ColBERTRanker": "transformers",
+    "LLMRanker":"transformers"
 }
 
 def _get_model_type(
@@ -59,6 +61,7 @@ def Reranker(
     model_name: str,
     model_type: Optional[str] = None,
     verbose: int = 1,
+    **kwargs
     ):
 
     #Infer the model class of the reranker。（by model_name or model_type）
@@ -79,7 +82,7 @@ def Reranker(
             model_class_type = "CorssEncoderRanker"
     try:
         print(f"Loading {model_class_type} model {model_name}")
-        return AVAILABLE_RANKERS[model_class_type](model_name, verbose=verbose)
+        return AVAILABLE_RANKERS[model_class_type](model_name, verbose=verbose,**kwargs)
     except KeyError:
         print(
             f"You don't have the necessary dependencies installed to use {model_class_type}."

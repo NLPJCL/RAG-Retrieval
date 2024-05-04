@@ -26,25 +26,32 @@ class CorssEncoderRanker(BaseRanker):
             model_name_or_path, torch_dtype=self.dtype
         ).to(self.device)
 
+        vprint(f"Loaded model {self.model_name_or_path}", self.verbose)
+
         self.model.eval()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 
-        if device is not None and device.startswith('cuda:'):
-            self.num_gpus = torch.cuda.device_count()
-            if self.num_gpus > 1:
-                print(f"----------using {self.num_gpus}*GPUs----------")
-                self.model = torch.nn.DataParallel(self.model)
-        else:
-            self.num_gpus = 1
+        # if device is not None and device.startswith('cuda:'):
+        #     self.num_gpus = torch.cuda.device_count()
+        #     if self.num_gpus > 1:
+        #         vprint(f"----------using {self.num_gpus}*GPUs----------",self.verbose)
+        #         self.model = torch.nn.DataParallel(self.model)
+        # else:
+        #     self.num_gpus = 1
     
     @torch.no_grad()
     def compute_score(self, 
         sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
         batch_size: int = 256,
         max_length: int = 512,
+        normalize: bool = False,
         enable_tqdm: bool = True,
     ):
-        
+
+        # batch inference
+        # if self.num_gpus > 1:
+        #     batch_size = batch_size * self.num_gpus
+
         all_scores = []
         for start_index in tqdm.tqdm(range(0, len(sentence_pairs), batch_size), desc="Compute Scores",
                                     disable=not enable_tqdm):
@@ -58,7 +65,7 @@ class CorssEncoderRanker(BaseRanker):
             ).to(self.device)
 
             scores = self.model(**inputs).logits.view(-1, ).float()
-            if 'bce' in self.model_name_or_path:
+            if 'bce' in self.model_name_or_path or normalize:
                 scores = torch.sigmoid(scores)
             all_scores.extend(scores.cpu().numpy().tolist())
 
@@ -72,6 +79,7 @@ class CorssEncoderRanker(BaseRanker):
         docs: Union[List[str], str] = None,
         batch_size: int = 256,
         max_length: int = 512,
+        normalize: bool = False,
         long_doc_process_strategy: str="max_score_slice",#['max_score_slice','max_length_truncation']
     ):  
         
@@ -83,9 +91,9 @@ class CorssEncoderRanker(BaseRanker):
         
         vprint(f'long_doc_process_strategy is {long_doc_process_strategy}',self.verbose)
         if long_doc_process_strategy=='max_length_truncation':
-            return self.__max_length_truncation_rerank(query,docs,batch_size,max_length)
+            return self.__max_length_truncation_rerank(query,docs,batch_size,max_length,normalize)
         else:
-            return self.__max_score_slice_rerank(query,docs,batch_size,max_length)
+            return self.__max_score_slice_rerank(query,docs,batch_size,max_length,normalize)
 
     @torch.no_grad()
     def __max_length_truncation_rerank(self,
@@ -93,10 +101,11 @@ class CorssEncoderRanker(BaseRanker):
         docs: Union[List[str], str] = None,
         batch_size: int = 256,
         max_length: int = 512,
+        normalize: bool = False,
     ):
         doc_ids = list(range(len(docs)))
         sentence_pairs=[ [query,doc]  for doc in docs]
-        all_scores = self.compute_score(sentence_pairs,batch_size,max_length,enable_tqdm=False)
+        all_scores = self.compute_score(sentence_pairs,batch_size,max_length,normalize=normalize,enable_tqdm=False)
 
         ranked_results = [
             Result(doc_id=doc_id, text=doc, score=score, rank=idx + 1)
@@ -112,6 +121,7 @@ class CorssEncoderRanker(BaseRanker):
         docs: Union[List[str], str] = None,
         batch_size: int=256,
         max_length: int = 512,
+        normalize: bool = False,
         overlap_tokens_length: int=80,
     ):
 
@@ -126,8 +136,8 @@ class CorssEncoderRanker(BaseRanker):
         )
 
         # batch inference
-        if self.num_gpus > 1:
-            batch_size = batch_size * self.num_gpus
+        # if self.num_gpus > 1:
+        #     batch_size = batch_size * self.num_gpus
 
         all_scores = []
         for start_index in range(0, len(sentence_pairs), batch_size):
@@ -138,14 +148,13 @@ class CorssEncoderRanker(BaseRanker):
                     pad_to_multiple_of=None,
                     return_tensors="pt"
                 ).to(self.device)
-            #batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
             scores = self.model(**batch).logits.view(-1,).float()
-            if 'bce' in self.model_name_or_path:
+            if 'bce' in self.model_name_or_path or normalize:
                 scores = torch.sigmoid(scores)
             all_scores.extend(scores.cpu().numpy().tolist())
 
         # ranking
-        merge_scores = [0 for _ in range(len(docs))]
+        merge_scores = [float("-inf") for _ in range(len(docs))]
         for idx, score in zip(sentence_pairs_idxs, all_scores):
             merge_scores[idx] = max(merge_scores[idx], score)
 
@@ -168,7 +177,6 @@ class CorssEncoderRanker(BaseRanker):
         def _merge_inputs(chunk1_raw, chunk2):
             chunk1 = deepcopy(chunk1_raw)
 
-            #add sep
             chunk1['input_ids'].append(sep_id)
             chunk1['input_ids'].extend(chunk2['input_ids'])
             chunk1['input_ids'].append(sep_id)
