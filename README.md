@@ -16,22 +16,25 @@
     <p>
 </h4>
 
-RAG-Retrieval 提供了全链路的RAG检索微调代码，支持微调任意开源的RAG检索模型，包括向量（embedding、图a）、迟交互式模型（colbert、图d）、交互式模型（cross encoder、图c）。
+RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码。对于微调，支持微调任意开源的RAG检索模型，包括向量（embedding、图a）、迟交互式模型（colbert、图d）、交互式模型（cross encoder、图c）。对于推理，RAG-Retrieval专注于排序(reranker)，开发了一个轻量级的python库[rag-retrieval](https://pypi.org/project/rag-retrieval/),提供统一的方式调用任意不同的RAG排序模型。
+
 ![ColBERT](pictures/models.png)
+
 # 最新更新
+
+- 5/5/2024:发布RAG-Retrieval的轻量级的python库[RAG-Retrieval：一个轻量级的python库，提供统一的方式调用不同RAG的排序模型](https://zhuanlan.zhihu.com/p/683483778)
 
 - 3/18/2024:发布RAG-Retrieval [RAG-Retrieval知乎介绍](https://zhuanlan.zhihu.com/p/683483778)
 
-# 创建环境
-    
+
+# 使用RAG-Retrieval微调任意的RAG检索模型
+
+## 安装环境
 ```bash
 conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
 #为了避免自动安装的torch与本地的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
 pip install -r requirements.txt 
 ```
-
-
-# 微调模型
 
 ##  向量（embedding）模型
 - 支持微调任意开源的embedding模型（bge,m3e等等）
@@ -42,7 +45,7 @@ pip install -r requirements.txt
 
 微调embedding模型流程
 ```bash
-cd ./rag-retrieval/embedding
+cd ./rag_retrieval/train/embedding
 bash train_embedding.sh
 ```
 
@@ -53,7 +56,7 @@ bash train_embedding.sh
 
 微调colbert模型流程
 ```bash
-cd ./rag-retrieval/colbert
+cd ./rag_retrieval/train/colbert
 bash train_colbert.sh
 ```
 ## 排序（reranker,cross encoder）模型
@@ -64,14 +67,81 @@ bash train_colbert.sh
 
 微调reranker模型流程
 ```bash
-cd ./rag-retrieval/reranker
+cd ./rag_retrieval/train/reranker
 bash train_reranker.sh
 ```
+
+# 使用RAG-Retrieval推理任意的RAG Reranker模型
+
+我们开发了一个轻量级的python库[rag-retrieval](https://pypi.org/project/rag-retrieval/),提供统一的方式调用任意不同的RAG排序模型，其有以下的特点。
+
+1.支持多种排序模型：支持常见的开源排序模型(corss encoder reranker,decoder-only 的llm reranker)
+
+2.长doc友好：支持两种不同的对于长doc的处理逻辑(最大长度截断，切分取最大分值)。
+
+3.益于扩展：如果有新的排序模型，用户只需要继承basereranker，并且实现rank以及comput_score函数即可。
+
+## 安装环境
+```bash
+#为了避免自动安装的torch与本地的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
+pip install rag-retrieval
+```
+
+## 支持的reranker模型
+
+### Cross Encoder ranker
+
+对于cross encoder 的ranker，rag_retrieval的Reranker支持多个强大的开源模型,总的来说，只要其cross encoder是使用transformers的**AutoModelForSequenceClassification**的模型结构，那么就可以支持使用Reranker来进行推理。举例如下。
+
+- **bge系列的cross encoder模型，例如(BAAI/bge-reranker-base, BAAI/bge-reranker-large, BAAI/bge-reranker-v2-m3 )**
+
+- **bce的cross encoder模型，例如(maidalun1020/bce-reranker-base_v1)**
+
+
+### LLM ranker 
+
+对于LLM ranker，rag_retrieval的Reranker支持多种强大的定制化LLM排序模型。也支持使用任意的LLM的chat模型来进行zero shot排序。举例如下。
+
+- **bge系列的llm ranker模型，例如(BAAI/bge-reranker-v2-gemma, BAAI/bge-reranker-v2-minicpm-layerwise, BAAI/bge-reranker-v2-m3 )**
+
+- **也支持使用任意的LLM的chat模型来进行zero shot排序**
+
+## 使用
+
+详细的使用方法参考Reranker_Tutorial
+
+```python
+import os
+os.environ['CUDA_VISIBLE_DEVICES']='7'
+
+from rag_retrieval import Reranker
+
+ranker = Reranker('BAAI/bge-reranker-base',dtype='fp16',verbose=0)
+
+query='what is panda?'
+
+docs=['hi','The giant panda (Ailuropoda melanoleuca), sometimes called a panda bear or simply panda, is a bear species endemic to China.']
+
+doc_ranked = ranker.rerank(query,docs)
+print(doc_ranked)
+```
+results=[Result(doc_id=1, text='The giant panda (Ailuropoda melanoleuca), sometimes called a panda bear or simply panda, is a bear species endemic to China.', score=6.18359375, rank=1), Result(doc_id=0, text='hi', score=-8.1484375, rank=2)] query='what is panda?' has_scores=True
+
+**返回解释**
+
+返回是一个RankedResults对象，其主要的属性有：results: List[Result]。一组Result对象，而Result的属性有：
+- doc_id: Union[int, str]
+- text: str
+- score: Optional[float] = None
+- rank: Optional[int] = None
+
+RankedResults对象也有一些常见的方法如top_k:按照score返回top_k个Result.get_score_by_docid:输入doc在输入的顺序，得到对应的score。
+
+
 
 
 # 实验结果
 
-说明：结果仅供参考，训练模型只是为了验证RAG-Retrieval的训练代码是否正确。相比的两个模型，都是很好的开源模型。而且他们都是多语言模型，而笔者训练的模型仅仅支持中文。
 
 ## reranker模型在 MTEB Reranking 任务的结果
 
@@ -106,6 +176,8 @@ bash train_reranker.sh
 |   bge-reranker-base  **finetune**    | 67.57 | **+0.29** | 
 
 后面带有finetune的代表我们使用RAG-Retrieval在对应开源模型的基础上继续微调所得，训练数据使用T2-Reranking的训练集。
+
+值得注意的是bge的三种开源模型，训练集中已经包含了T2-Reranking，因此继续微调的性能提升效果一般，如果是使用垂直领域的数据集继续微调开源模型，性能提升会更大。
 
 ## License
 RAG-Retrieval is licensed under the [MIT License](https://github.com/NLPJCL/RAG-Retrieval/blob/master/LICENSE). 

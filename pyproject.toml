@@ -13,11 +13,11 @@ packages = [
 name = "rag_retrieval" 
 
 
-version = "0.1.1"
+version = "0.2.1"
 
-description = "A unified API for various RAG Retrieval  re-ranking models."
+description = "A unified API for various RAG Retrieval  reranking models."
 
-readme = "README.md"
+readme = "examples/Reranker_Tutorial.md"
 
 requires-python = ">=3.8"
 
@@ -48,13 +48,9 @@ classifiers = [
 dependencies = [
   "pydantic",
   "tqdm",
+  "torch"
+  "transformers",
 ]
-
-[project.optional-dependencies]
-all = ["transformers", "torch", "requests"]
-transformers = ["transformers", "torch",]
-api = ["requests"]
-dev = ["pytest"]
 
 [project.urls]
 "Homepage" = "https://github.com/NLPJCL/RAG-Retrieval"

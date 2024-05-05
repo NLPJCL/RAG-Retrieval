@@ -109,7 +109,7 @@ class RankerMulabelDataset(Dataset):
 
 
 def test_RankerDataset():
-    train_data_path='../../example_data/t2rank_100.json'
+    train_data_path='../../../example_data/t2rank_100.json'
 
     model_name_or_path='../chinese-roberta-wwm-ext'
 
