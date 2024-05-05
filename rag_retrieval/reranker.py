@@ -87,10 +87,6 @@ def Reranker(
         print(
             f"You don't have the necessary dependencies installed to use {model_class_type}."
         )
-        print(
-            f'Please install the necessary dependencies for {model_class_type} by running `pip install "rerankers[{DEPS_MAPPING[model_type]}]"`',
-            'or `pip install "rerankers[all]" to install the dependencies for all reranker types.',
-        )
         return None
 
 
