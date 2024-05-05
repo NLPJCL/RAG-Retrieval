@@ -3,6 +3,9 @@
     <a href="https://pypi.org/project/rag-retrieval/#description">
             <img alt="Build" src="https://img.shields.io/pypi/v/rag-retrieval?color=brightgreen">
     </a>
+    <a href="https://www.pepy.tech/projects/rag-retrieval">
+            <img alt="Build" src="https://static.pepy.tech/personalized-badge/rag-retrieval?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=downloads">
+    </a>
     <a href="https://github.com/NLPJCL/RAG-Retrieval">
             <img alt="Build" src="https://img.shields.io/badge/Contribution-Welcome-blue">
     </a>
