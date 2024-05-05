@@ -15,7 +15,7 @@ name = "rag_retrieval"
 
 version = "0.2.1"
 
-description = "A unified API for various RAG Retrieval  reranking models."
+description = "A unified API for various RAG Retrieval  reranker models."
 
 readme = "examples/Reranker_Tutorial.md"
 
@@ -48,8 +48,8 @@ classifiers = [
 dependencies = [
   "pydantic",
   "tqdm",
-  "torch"
-  "transformers",
+  "torch",
+  "transformers"
 ]
 
 [project.urls]

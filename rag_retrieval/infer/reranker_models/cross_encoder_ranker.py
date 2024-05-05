@@ -47,7 +47,7 @@ class CorssEncoderRanker(BaseRanker):
         normalize: bool = False,
         enable_tqdm: bool = True,
     ):
-
+        
         # batch inference
         # if self.num_gpus > 1:
         #     batch_size = batch_size * self.num_gpus
@@ -83,11 +83,11 @@ class CorssEncoderRanker(BaseRanker):
         long_doc_process_strategy: str="max_score_slice",#['max_score_slice','max_length_truncation']
     ):  
         
-        # remove invalid passages
+        # remove invalid docs
         docs = [doc[:128000] for doc in docs if isinstance(doc, str) and 0 < len(doc)]
 
         if query is None or len(query) == 0 or len(docs) == 0:
-            return {'rerank_passages': [], 'rerank_scores': []}
+            return {'rerank_docs': [], 'rerank_scores': []}
         
         vprint(f'long_doc_process_strategy is {long_doc_process_strategy}',self.verbose)
         if long_doc_process_strategy=='max_length_truncation':
@@ -148,6 +148,7 @@ class CorssEncoderRanker(BaseRanker):
                     pad_to_multiple_of=None,
                     return_tensors="pt"
                 ).to(self.device)
+            #batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
             scores = self.model(**batch).logits.view(-1,).float()
             if 'bce' in self.model_name_or_path or normalize:
                 scores = torch.sigmoid(scores)
@@ -168,7 +169,7 @@ class CorssEncoderRanker(BaseRanker):
 
     def __reranker_tokenize_preproc(self,
         query: str, 
-        passages: List[str],
+        docs: List[str],
         max_length: int = 512,
         overlap_tokens_length: int = 80,
     ):
@@ -177,6 +178,7 @@ class CorssEncoderRanker(BaseRanker):
         def _merge_inputs(chunk1_raw, chunk2):
             chunk1 = deepcopy(chunk1_raw)
 
+            #add sep
             chunk1['input_ids'].append(sep_id)
             chunk1['input_ids'].extend(chunk2['input_ids'])
             chunk1['input_ids'].append(sep_id)
@@ -191,29 +193,29 @@ class CorssEncoderRanker(BaseRanker):
             return chunk1
 
         query_inputs = self.tokenizer.encode_plus(query, truncation=False, padding=False)
-        max_passage_inputs_length = max_length - len(query_inputs['input_ids']) - 2
-        assert max_passage_inputs_length > 100, "Your query is too long! Please make sure your query less than 400 tokens!"
-        overlap_tokens_length_implt = min(overlap_tokens_length, max_passage_inputs_length//4)
+        max_doc_inputs_length = max_length - len(query_inputs['input_ids']) - 2
+        assert max_doc_inputs_length > 100, "Your query is too long! Please make sure your query less than 400 tokens!"
+        overlap_tokens_length_implt = min(overlap_tokens_length, max_doc_inputs_length//4)
         
 
         sentence_pairs = []
         sentence_pairs_idxs = []
-        for idx, passage in enumerate(passages):
-            passage_inputs = self.tokenizer.encode_plus(passage, truncation=False, padding=False, add_special_tokens=False)
-            passage_inputs_length = len(passage_inputs['input_ids'])
+        for idx, doc in enumerate(docs):
+            doc_inputs = self.tokenizer.encode_plus(doc, truncation=False, padding=False, add_special_tokens=False)
+            doc_inputs_length = len(doc_inputs['input_ids'])
 
-            if passage_inputs_length <= max_passage_inputs_length:
-                qp_merge_inputs = _merge_inputs(query_inputs, passage_inputs)
+            if doc_inputs_length <= max_doc_inputs_length:
+                qp_merge_inputs = _merge_inputs(query_inputs, doc_inputs)
                 sentence_pairs.append(qp_merge_inputs)
                 sentence_pairs_idxs.append(idx)
             else:
                 start_id = 0
-                while start_id < passage_inputs_length:
-                    end_id = start_id + max_passage_inputs_length
-                    sub_passage_inputs = {k:v[start_id:end_id] for k,v in passage_inputs.items()}
-                    start_id = end_id - overlap_tokens_length_implt if end_id < passage_inputs_length else end_id
+                while start_id < doc_inputs_length:
+                    end_id = start_id + max_doc_inputs_length
+                    sub_doc_inputs = {k:v[start_id:end_id] for k,v in doc_inputs.items()}
+                    start_id = end_id - overlap_tokens_length_implt if end_id < doc_inputs_length else end_id
 
-                    qp_merge_inputs = _merge_inputs(query_inputs, sub_passage_inputs)
+                    qp_merge_inputs = _merge_inputs(query_inputs, sub_doc_inputs)
                     sentence_pairs.append(qp_merge_inputs)
                     sentence_pairs_idxs.append(idx)
         

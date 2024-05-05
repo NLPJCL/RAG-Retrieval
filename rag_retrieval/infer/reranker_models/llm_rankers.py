@@ -90,7 +90,7 @@ class LLMRanker(BaseRanker):
     @torch.no_grad()
     def rerank(self, 
         query: str, 
-        passages: Union[List[str], str] = None,
+        docs: Union[List[str], str] = None,
         batch_size: int = 256,
         normalize: bool = False,
         prompt: str = None,
@@ -98,30 +98,30 @@ class LLMRanker(BaseRanker):
         max_length: int = 1024,
         long_doc_process_strategy: str="max_score_slice",#['max_score_slice','max_length_truncation']
     ):  
-        # remove invalid passages
-        passages = [passage[:128000] for passage in passages if isinstance(passage, str) and 0 < len(passage)]
+        # remove invalid docs
+        docs = [doc[:128000] for doc in docs if isinstance(doc, str) and 0 < len(doc)]
 
-        if query is None or len(query) == 0 or len(passages) == 0:
-            return {'rerank_passages': [], 'rerank_scores': []}
+        if query is None or len(query) == 0 or len(docs) == 0:
+            return {'rerank_docs': [], 'rerank_scores': []}
         
         vprint(f'long_doc_process_strategy is {long_doc_process_strategy}',self.verbose)
         if long_doc_process_strategy=='max_length_truncation':
-            return self.__max_length_truncation_rerank(query,passages,batch_size,max_length,normalize,prompt,cutoff_layers)
+            return self.__max_length_truncation_rerank(query,docs,batch_size,max_length,normalize,prompt,cutoff_layers)
         else:
-            return self.__max_score_slice_rerank(query,passages,batch_size,max_length,normalize,prompt,cutoff_layers)
+            return self.__max_score_slice_rerank(query,docs,batch_size,max_length,normalize,prompt,cutoff_layers)
     
     @torch.no_grad()
     def __max_length_truncation_rerank(self,
         query: str, 
-        passages: Union[List[str], str] = None,
+        docs: Union[List[str], str] = None,
         batch_size: int = 32,
         max_length: int = 1024,
         normalize: bool = False,
         prompt: str = None,
         cutoff_layers: list = None,
     ):
-        passages_ids = list(range(len(passages)))
-        sentence_pairs=[ [query,passages]  for passages in passages_ids]
+        doc_ids = list(range(len(docs)))
+        sentence_pairs= [ [query,doc]  for doc in docs]
         all_scores = self.compute_score(
             sentence_pairs,
             batch_size=batch_size,
@@ -143,7 +143,7 @@ class LLMRanker(BaseRanker):
     @torch.no_grad()
     def __max_score_slice_rerank(self,
         query: str, 
-        passages: Union[List[str], str] = None,
+        docs: Union[List[str], str] = None,
         batch_size: int=32,
         max_length: int = 1024,
         normalize: bool = False,
@@ -157,7 +157,7 @@ class LLMRanker(BaseRanker):
         # preproc of tokenization
         sentence_pairs, sentence_pairs_idxs = self.__reranker_tokenize_preproc(
             query,
-            passages,
+            docs,
             max_length=max_length,
             prompt=prompt,
             overlap_tokens_length=overlap_tokens_length,
@@ -199,7 +199,7 @@ class LLMRanker(BaseRanker):
 
     def __reranker_tokenize_preproc(self,
         query: str, 
-        passages: List[str],
+        docs: List[str],
         max_length: int = 1024,
         prompt: str = None,
         overlap_tokens_length: int = 80,
@@ -222,27 +222,27 @@ class LLMRanker(BaseRanker):
                                     truncation=True)['input_ids']
         
         
-        max_passage_inputs_length = max_length - len(query_inputs) - 2
-        overlap_tokens_length_implt = min(overlap_tokens_length, max_passage_inputs_length//4)
+        max_doc_inputs_length = max_length - len(query_inputs) - 2
+        overlap_tokens_length_implt = min(overlap_tokens_length, max_doc_inputs_length//4)
 
         sentence_pairs = []
         sentence_pairs_idxs = []
         
-        for idx, passage in enumerate(passages):
+        for idx, doc in enumerate(docs):
             
-            passage_inputs = self.tokenizer(f'B: {passage}',
+            doc_inputs = self.tokenizer(f'B: {doc}',
                                     return_tensors=None,
                                     add_special_tokens=False,
                                     max_length=max_length,
                                     truncation=True)
             
-            passage_inputs_length = len(passage_inputs['input_ids'])
+            doc_inputs_length = len(doc_inputs['input_ids'])
 
-            if passage_inputs_length <= max_passage_inputs_length:
+            if doc_inputs_length <= max_doc_inputs_length:
 
                 item = self.tokenizer.prepare_for_model(
                     [self.tokenizer.bos_token_id] + query_inputs,
-                    sep_inputs + passage_inputs['input_ids'],
+                    sep_inputs + doc_inputs['input_ids'],
                     truncation='only_second',
                     max_length=max_length,
                     padding=False,
@@ -256,15 +256,14 @@ class LLMRanker(BaseRanker):
                 sentence_pairs_idxs.append(idx)
             else:
                 start_id = 0
-                while start_id < passage_inputs_length:
-                    end_id = start_id + max_passage_inputs_length
-                    sub_passage_inputs = {k:v[start_id:end_id] for k,v in passage_inputs.items()}
-                    start_id = end_id - overlap_tokens_length_implt if end_id < passage_inputs_length else end_id
-
+                while start_id < doc_inputs_length:
+                    end_id = start_id + max_doc_inputs_length
+                    sub_doc_inputs = {k:v[start_id:end_id] for k,v in doc_inputs.items()}
+                    start_id = end_id - overlap_tokens_length_implt if end_id < doc_inputs_length else end_id
 
                     item = self.tokenizer.prepare_for_model(
                         [self.tokenizer.bos_token_id] + query_inputs,
-                        sep_inputs + sub_passage_inputs['input_ids'],
+                        sep_inputs + sub_doc_inputs['input_ids'],
                         truncation='only_second',
                         max_length=max_length,
                         padding=False,
