@@ -9,9 +9,9 @@
 </p>
 <h4 align="center">
     <p>
-        <a href=#创建环境>创建环境</a> |
-        <a href="#微调模型">微调模型</a> |
-        <a href=#实验结果>实验结果</a> |
+        <a href="#推理任意的RAG Reranker模型">推理任意的RAG Reranker模型</a> |
+        <a href="#微调任意的RAG检索模型">微调任意的RAG检索模型</a> |
+        <a href="#实验结果">实验结果</a> |
         <a href="#license">License</a> 
     <p>
 </h4>
@@ -27,59 +27,25 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码�
 - 3/18/2024:发布RAG-Retrieval [RAG-Retrieval知乎介绍](https://zhuanlan.zhihu.com/p/683483778)
 
 
-# 使用RAG-Retrieval微调任意的RAG检索模型
 
-## 安装环境
-```bash
-conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
-#为了避免自动安装的torch与本地的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
-pip install -r requirements.txt 
-```
+# 推理任意的RAG Reranker模型
 
-##  向量（embedding）模型
-- 支持微调任意开源的embedding模型（bge,m3e等等）
+## 为什么要做Reranker模型的推理,甚至开发一个包？
 
-- 支持对两种数据进行微调：
-    -  query和正例（负例采用batch内随机负例），
-    -  query和正例以及难负例。（负例为对应的难负例，以及batch内随机负例）
+排序模型是任何检索架构的重要组成部分，也是 RAG 的重要组成部分，但目前的现状是：
 
-微调embedding模型流程
-```bash
-cd ./rag_retrieval/train/embedding
-bash train_embedding.sh
-```
+- 开源的排序模型很多，在A场景表现好的模型，在B场景不一定表现好，很难知道该使用哪一个。
+- 另外，新的排序模型不断的出现，如今年3月份BGE才发布的LLM Reranker，使用decoder-only的大模型来对段落重排序，非常有前景。
+- 所有不同的排序模型，都倾向于自己开发一套库来进行排序，这导致了更高的壁垒，新用户需要熟悉每一种排序模型的输入和输出，以及安装各种不同的依赖。
 
-## 迟交互式（colbert）模型
 
-- 支持微调开源的bge-m3e模型中的colbert。
-- 支持query和正例以及难负例。（负例为对应的难负例，以及batch内随机负例）
+因此，RAG-Retrieval开发了一个轻量级的python库[rag-retrieval](https://pypi.org/project/rag-retrieval/),提供统一的方式调用任意不同的RAG排序模型，其有以下的特点。
 
-微调colbert模型流程
-```bash
-cd ./rag_retrieval/train/colbert
-bash train_colbert.sh
-```
-## 排序（reranker,cross encoder）模型
-- 支持微调任意开源的reranker模型（例如，bge-rerank、bce-rerank等）
-- 支持两种数据进行微调：
-    - query和doc的相关性为二分类（1代表相关、0代表不相关）
-    - query和doc的相关性为四分类。（3，2，1，0，相关性依次降低。）
+- 支持多种排序模型：支持常见的开源排序模型(Cross Encoder Reranker,Decoder-Only 的LLM Reranker)
 
-微调reranker模型流程
-```bash
-cd ./rag_retrieval/train/reranker
-bash train_reranker.sh
-```
+- 长doc友好：支持两种不同的对于长doc的处理逻辑(最大长度截断，切分取最大分值)。
 
-# 使用RAG-Retrieval推理任意的RAG Reranker模型
-
-我们开发了一个轻量级的python库[rag-retrieval](https://pypi.org/project/rag-retrieval/),提供统一的方式调用任意不同的RAG排序模型，其有以下的特点。
-
-1.支持多种排序模型：支持常见的开源排序模型(corss encoder reranker,decoder-only 的llm reranker)
-
-2.长doc友好：支持两种不同的对于长doc的处理逻辑(最大长度截断，切分取最大分值)。
-
-3.益于扩展：如果有新的排序模型，用户只需要继承basereranker，并且实现rank以及comput_score函数即可。
+- 益于扩展：如果有新的排序模型，用户只需要继承basereranker，并且实现rank以及comput_score函数即可。
 
 ## 安装环境
 ```bash
@@ -87,24 +53,24 @@ bash train_reranker.sh
 pip install rag-retrieval
 ```
 
-## 支持的reranker模型
+## 支持的Reranker模型
 
-### Cross Encoder ranker
+### Cross Encoder Reranker
 
-对于cross encoder 的ranker，rag_retrieval的Reranker支持多个强大的开源模型,总的来说，只要其cross encoder是使用transformers的**AutoModelForSequenceClassification**的模型结构，那么就可以支持使用Reranker来进行推理。举例如下。
+对于Cross Encoder Reranker，只要其使用transformers的**AutoModelForSequenceClassification**，那么就可以使用rag_retrieval的Reranker来进行推理。举例如下。
 
-- **bge系列的cross encoder模型，例如(BAAI/bge-reranker-base, BAAI/bge-reranker-large, BAAI/bge-reranker-v2-m3 )**
+- **bge系列的Cross Encoder模型，例如(BAAI/bge-reranker-base, BAAI/bge-reranker-large, BAAI/bge-reranker-v2-m3)**
 
-- **bce的cross encoder模型，例如(maidalun1020/bce-reranker-base_v1)**
+- **bce的Cross Encoder模型，例如(maidalun1020/bce-reranker-base_v1)**
 
 
-### LLM ranker 
+### LLM Reranker 
 
-对于LLM ranker，rag_retrieval的Reranker支持多种强大的定制化LLM排序模型。也支持使用任意的LLM的chat模型来进行zero shot排序。举例如下。
+对于LLM Reranker，rag_retrieval的Reranker支持多种强大的LLM排序模型。也支持使用任意的LLM的chat模型来进行zero shot排序。举例如下。
 
-- **bge系列的llm ranker模型，例如(BAAI/bge-reranker-v2-gemma, BAAI/bge-reranker-v2-minicpm-layerwise, BAAI/bge-reranker-v2-m3 )**
+- **bge系列的LLM Reranker模型，例如(BAAI/bge-reranker-v2-gemma, BAAI/bge-reranker-v2-minicpm-layerwise, BAAI/bge-reranker-v2-m3 )**
 
-- **也支持使用任意的LLM的chat模型来进行zero shot排序**
+- **也支持使用任意LLM的chat模型来进行zero shot排序**
 
 ## 使用
 
@@ -138,6 +104,50 @@ results=[Result(doc_id=1, text='The giant panda (Ailuropoda melanoleuca), someti
 RankedResults对象也有一些常见的方法如top_k:按照score返回top_k个Result.get_score_by_docid:输入doc在输入的顺序，得到对应的score。
 
 
+
+# 微调任意的RAG检索模型
+
+## 安装环境
+```bash
+conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
+#为了避免自动安装的torch与本地的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
+pip install -r requirements.txt 
+```
+
+##  向量（embedding）模型
+- 支持微调任意开源的embedding模型（bge,m3e等等）
+
+- 支持对两种数据进行微调：
+    -  query和正例（负例采用batch内随机负例），
+    -  query和正例以及难负例。（负例为对应的难负例，以及batch内随机负例）
+
+微调embedding模型流程,详细的流程可参考模型目录下的Tutorial。
+```bash
+cd ./rag_retrieval/train/embedding
+bash train_embedding.sh
+```
+
+## 迟交互式（colbert）模型
+
+- 支持微调开源的bge-m3e模型中的colbert。
+- 支持query和正例以及难负例。（负例为对应的难负例，以及batch内随机负例）
+
+微调colbert模型流程，详细的流程可参考模型目录下的Tutorial。
+```bash
+cd ./rag_retrieval/train/colbert
+bash train_colbert.sh
+```
+## 排序（reranker,cross encoder）模型
+- 支持微调任意开源的reranker模型（例如，bge-rerank、bce-rerank等）
+- 支持两种数据进行微调：
+    - query和doc的相关性为二分类（1代表相关、0代表不相关）
+    - query和doc的相关性为四分类。（3，2，1，0，相关性依次降低。）
+
+微调reranker模型流程，详细的流程可参考模型目录下的Tutorial。
+```bash
+cd ./rag_retrieval/train/reranker
+bash train_reranker.sh
+```
 
 
 # 实验结果
@@ -177,7 +187,7 @@ RankedResults对象也有一些常见的方法如top_k:按照score返回top_k个
 
 后面带有finetune的代表我们使用RAG-Retrieval在对应开源模型的基础上继续微调所得，训练数据使用T2-Reranking的训练集。
 
-值得注意的是bge的三种开源模型，训练集中已经包含了T2-Reranking，因此继续微调的性能提升效果一般，如果是使用垂直领域的数据集继续微调开源模型，性能提升会更大。
+值得注意的是bge的三种开源模型，训练集中已经包含了T2-Reranking，并且该数据较为通用，因此使用该数据继续微调的性能提升效果不大，但是如果使用垂直领域的数据集继续微调开源模型，性能提升会更大。
 
-## License
+# License
 RAG-Retrieval is licensed under the [MIT License](https://github.com/NLPJCL/RAG-Retrieval/blob/master/LICENSE). 

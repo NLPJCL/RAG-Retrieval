@@ -1,3 +1,11 @@
+
+# 安装环境
+```bash
+conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
+#为了避免自动安装的torch与本地的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
+pip install -r requirements.txt 
+```
+
 # 微调模型
 在安装好依赖后，我们通过具体的示例来展示如何利用我们自己的数据来微调开源的colbert模型。(bge-m3-colbert),或者你可以从BERT类模型(chinese-roberta-wwm-ext)开始从零训练自己的colbert模型。
 
