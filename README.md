@@ -1,5 +1,8 @@
 <h1 align="center">RAG-Retrieval</h1>
 <p align="center">
+    <a href="https://pypi.org/project/rag-retrieval/#description">
+            <img alt="Build" src="https://img.shields.io/pypi/v/rag-retrieval?color=brightgreen">
+    </a>
     <a href="https://github.com/NLPJCL/RAG-Retrieval">
             <img alt="Build" src="https://img.shields.io/badge/Contribution-Welcome-blue">
     </a>
