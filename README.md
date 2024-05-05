@@ -75,35 +75,13 @@ pip install rag-retrieval
 
 ## 使用
 
-我们做了大量的测试与原有推理框架对齐，详见tests，详细的使用方法参考examples/Reranker_Tutorial。
+**rag-retrieval包详细的使用方法和注意事项可以参考[Tutorial](https://github.com/NLPJCL/RAG-Retrieval/blob/master/examples/Reranker_Tutorial.md)**
 
-```python
-import os
-os.environ['CUDA_VISIBLE_DEVICES']='7'
+**我们做了大量的测试与下面原有推理框架对齐，详见[tests](https://github.com/NLPJCL/RAG-Retrieval/tree/master/tests)，他们需要不同的模块来执行，rag_retrieval则使用了统一的接口。**
 
-from rag_retrieval import Reranker
+如 FlagEmbedding的 FlagReranker,FlagLLMReranker,LayerWiseFlagLLMReranker。
 
-ranker = Reranker('BAAI/bge-reranker-base',dtype='fp16',verbose=0)
-
-query='what is panda?'
-
-docs=['hi','The giant panda (Ailuropoda melanoleuca), sometimes called a panda bear or simply panda, is a bear species endemic to China.']
-
-doc_ranked = ranker.rerank(query,docs)
-print(doc_ranked)
-```
-results=[Result(doc_id=1, text='The giant panda (Ailuropoda melanoleuca), sometimes called a panda bear or simply panda, is a bear species endemic to China.', score=6.18359375, rank=1), Result(doc_id=0, text='hi', score=-8.1484375, rank=2)] query='what is panda?' has_scores=True
-
-**返回解释**
-
-返回是一个RankedResults对象，其主要的属性有：results: List[Result]。一组Result对象，而Result的属性有：
-- doc_id: Union[int, str]
-- text: str
-- score: Optional[float] = None
-- rank: Optional[int] = None
-
-RankedResults对象也有一些常见的方法如top_k:按照score返回top_k个Result.get_score_by_docid:输入doc在输入的顺序，得到对应的score。
-
+如 BCEmbedding 的 RerankerModel 
 
 
 # 微调全链路的RAG检索模型
