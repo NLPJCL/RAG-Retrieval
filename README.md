@@ -75,7 +75,7 @@ pip install rag-retrieval
 
 ## 使用
 
-详细的使用方法参考Reranker_Tutorial
+我们做了大量的测试与原有推理框架对齐，详见tests，详细的使用方法参考examples/Reranker_Tutorial。
 
 ```python
 import os
