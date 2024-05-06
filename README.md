@@ -28,7 +28,7 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码�
 
 # 最新更新
 
-- 5/5/2024:发布RAG-Retrieval的轻量级的python库[RAG-Retrieval：一个轻量级的python库，提供统一的方式调用不同RAG的排序模型](https://zhuanlan.zhihu.com/p/683483778)
+- 5/5/2024:发布RAG-Retrieval的轻量级的python库[RAG-Retrieval：你的RAG应用值得更好的排序推理框架](https://zhuanlan.zhihu.com/p/692404995)
 
 - 3/18/2024:发布RAG-Retrieval [RAG-Retrieval知乎介绍](https://zhuanlan.zhihu.com/p/683483778)
 
