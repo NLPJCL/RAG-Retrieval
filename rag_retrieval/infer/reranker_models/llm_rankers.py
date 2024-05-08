@@ -334,7 +334,7 @@ class LLMRanker(BaseRanker):
 
 # pairs = [['what is panda?', 'hi'], ['what is panda?', 'The giant panda (Ailuropoda melanoleuca), sometimes called a panda bear or simply panda, is a bear species endemic to China.']]
 
-# model_name_or_path='/data/sealgo/user/lijiacheng/bge-reranker-v2-minicpm-layerwise/models--BAAI--bge-reranker-v2-minicpm-layerwise/snapshots/47b5332b296c4d8cb6ee2c60502cc62a0d708881'
+# model_name_or_path='./bge-reranker-v2-minicpm-layerwise/models--BAAI--bge-reranker-v2-minicpm-layerwise/snapshots/47b5332b296c4d8cb6ee2c60502cc62a0d708881'
 # reranker=llmreranker(model_name_or_path,dtype='fp16')
 
 # scores = reranker.compute_score(pairs)
