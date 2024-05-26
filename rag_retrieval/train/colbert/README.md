@@ -27,9 +27,9 @@ pip install -r requirements.txt
 执行bash train_colbert.sh即可，下面是train_colbert.sh执行的代码。
 
 ```bash
-CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../config/default_fsdp.yaml train_colbert.py  \
+CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_colbert.py  \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
---dataset "../../example_data/t2rank_100.json" \
+--dataset "../../../example_data/t2rank_100.json" \
 --output_dir "./output/t2ranking_100_example" \
 --batch_size 4 \
 --lr 5e-6 \
@@ -58,6 +58,10 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../config/d
 默认使用fsdp来支持多卡训练模型，以下是配置文件的示例
 - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml)。如果要在hfl/chinese-roberta-wwm-ext的基础上从零开始训练的排序，采用该配置文件。
 - [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml),如果要在BAAI/bge-m3的基础上进行微调，采用该配置文件，因为其在多语言的xlmroberta的基础上训练而来。
+
+多卡训练配置文件修改:
+- 修改train_colbert.sh的CUDA_VISIBLE_DEVICES="0"为你想要设置的多卡。
+- 修改上述提到的配置文件的num_processes为你想要跑的卡的数量。
 
 
 # 加载模型进行预测

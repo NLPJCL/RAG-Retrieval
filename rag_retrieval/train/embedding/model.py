@@ -176,20 +176,9 @@ class Embedding(nn.Module):
                     for k,
                     v in state_dict.items()})
             return state_dict  
-        
-        self.model.save(save_dir)
-        
-        #for solve a bug,https://github.com/huggingface/transformers/issues/27293.
-        #later upgrade sentence_transformers  will be solve https://github.com/UKPLab/sentence-transformers/issues/2533
-        merge_command = f"rm  {save_dir}/model.safetensors"
-        subprocess.run(merge_command, shell=True)
 
-        model_state_dict=_trans_state_dict(self.model._modules['0'].state_dict())
-        new_model_state_dict={}
-        for key,value, in model_state_dict.items():
-            new_model_state_dict[key.replace('auto_model.','')]=model_state_dict[key]
+        self.model.save(save_dir,safe_serialization=False)
 
-        torch.save(new_model_state_dict,save_dir+'/pytorch_model.bin')
 
     @classmethod
     def from_pretrained(
