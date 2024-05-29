@@ -1,3 +1,4 @@
+#!/bin/bash
 
 if [ ! -d "./output" ]; then
     mkdir -p ./output
@@ -11,7 +12,7 @@ fi
 
 CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_colbert.py  \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
---dataset "../../../example_data/t2rank_100.json" \
+--dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \
 --batch_size 4 \
 --lr 5e-6 \

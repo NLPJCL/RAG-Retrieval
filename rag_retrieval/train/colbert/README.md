@@ -12,11 +12,11 @@ pip install -r requirements.txt
 # 数据格式
 
 
-和bge类似，训练数据是一个json文件，文件中每一行如下面的示例所示。其中pos是一组正例doc的文本，neg是一组负例doc的文本。
+和bge类似，训练数据是一个jsonl文件，文件中每一行如下面的示例所示。其中pos是一组正例doc的文本，neg是一组负例doc的文本。
 
 对于colbert模型，支持使用下面的数据进行微调：
 
-- query和正例doc和难负例doc。此时负例为query对应的难负例，以及batch内随机负例,可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.json)文件。
+- query和正例doc和难负例doc。此时负例为query对应的难负例，以及batch内随机负例,可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.jsonl)文件。
 ```
 {"query": str, "pos": List[str], "neg":List[str]}
 ```
@@ -29,7 +29,7 @@ pip install -r requirements.txt
 ```bash
 CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_colbert.py  \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
---dataset "../../../example_data/t2rank_100.json" \
+--dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \
 --batch_size 4 \
 --lr 5e-6 \

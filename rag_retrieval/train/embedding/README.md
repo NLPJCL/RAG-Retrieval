@@ -19,7 +19,7 @@ pip install -r requirements.txt
 ```
 {"query": str, "pos": List[str]}
 ```
-- query和正例doc和难负例doc。此时负例为query对应的难负例，以及batch内随机负例,可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.json)文件。
+- query和正例doc和难负例doc。此时负例为query对应的难负例，以及batch内随机负例,可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.jsonl)文件。
 ```
 {"query": str, "pos": List[str], "neg":List[str]}
 ```
@@ -31,7 +31,7 @@ pip install -r requirements.txt
 ```bash
 CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
 --model_name_or_path "BAAI/bge-base-zh-v1.5" \
---dataset "../../../example_data/t2rank_100.json" \
+--dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \
 --batch_size 4 \
 --lr 2e-5 \

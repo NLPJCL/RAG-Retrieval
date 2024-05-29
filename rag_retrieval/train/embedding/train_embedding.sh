@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 if [ ! -d "./output" ]; then
     mkdir -p ./output
@@ -10,10 +10,9 @@ if [ ! -d "./logs" ]; then
     echo "mkdir logs"
 fi
 
-
 CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
 --model_name_or_path "BAAI/bge-base-zh-v1.5" \
---dataset "../../../example_data/t2rank_100.json" \
+--dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \
 --batch_size 4 \
 --lr 2e-5 \
@@ -27,4 +26,3 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../confi
 --query_max_len 128 \
 --passage_max_len 512 \
  >./logs/t2ranking_100_example.log &
-
