@@ -11,7 +11,7 @@ pip install -r requirements.txt
 
 # 数据格式
 
-和bge类似，训练数据是一个json文件，文件中每一行如下面的示例所示。其中pos是一组正例doc的文本，neg是一组负例doc的文本。
+和bge类似，训练数据是一个jsonl文件，文件中每一行如下面的示例所示。其中pos是一组正例doc的文本，neg是一组负例doc的文本。
 
 对于向量模型，支持以下两种数据进行微调：
 

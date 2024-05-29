@@ -160,7 +160,7 @@ class EmbeddingDataset(Dataset):
 
 
 def test_EmbeddingDataset():
-    train_data_path = '../../../example_data/t2rank_100.json'
+    train_data_path = '../../../example_data/t2rank_100.jsonl'
 
     model_name_or_path = 'hfl/chinese-roberta-wwm-ext'
 
