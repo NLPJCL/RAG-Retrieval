@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 和bge类似，训练数据是一个jsonl文件，文件中每一行如下面的示例所示。其中pos是一组正例doc的文本，neg是一组负例doc的文本。
 
-对于向量模型，支持以下两种数据进行微调：
+对于向量模型，支持以下三种数据进行微调：
 
 - query和正例doc，此时负例为batch内随机负例。
 ```
@@ -23,7 +23,10 @@ pip install -r requirements.txt
 ```
 {"query": str, "pos": List[str], "neg":List[str]}
 ```
-
+- query和正例doc，以及query和每个正例的分数。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/lmsft_100.jsonl)文件。
+```
+{"query": str, "pos": List[str], "scores":List[float]}
+```
 # 训练
 
 执行bash train_embedding.sh即可，下面是train_embedding.sh执行的代码。
