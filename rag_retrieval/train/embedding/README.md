@@ -23,9 +23,9 @@ pip install -r requirements.txt
 ```
 {"query": str, "pos": List[str], "neg":List[str]}
 ```
-- query和doc，以及query和每个正例的监督分数。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/lmsft_100.jsonl)文件。监督信号的构建推荐两种方式：
-  - 人工标注：类似STS任务，给query和每个文档打分。
-  - LLM标注：参考[Atlas](https://www.jmlr.org/papers/v24/23-0037.html) ，使用LLM的困惑度，或Encoder-Decoder架构Transformer的FiD分数。
+- query和doc，以及query和每个doc的监督分数。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/lmsft_100.jsonl)文件。监督信号的构建推荐两种方式：
+  - 人工标注：类似[STS任务](https://huggingface.co/datasets/PhilipMay/stsb_multi_mt)，给query和每个文档根据相似度打分。
+  - LLM标注：参考论文[Atlas](https://www.jmlr.org/papers/v24/23-0037.html) ，使用LLM的困惑度，或Encoder-Decoder架构Transformer的FiD分数。
 ```
 {"query": str, "pos": List[str], "scores":List[float]}
 ```
