@@ -111,7 +111,7 @@ class Embedding(nn.Module):
                      pos_doc_embeddings,
                      scores,
                      ):
-        loss_fct = nn.KLDivLoss()
+        loss_fct = nn.KLDivLoss(reduction="batchmean")
 
         # [batch_size] <- [batch_size,dim],[batch_size,dim]
         pos_sims = torch.einsum('bn, bn -> b', query_embeddings, pos_doc_embeddings)  # calculate every pair simlilarity score
@@ -120,11 +120,11 @@ class Embedding(nn.Module):
         scores = scores.to(query_embeddings.device)
 
         # scale to get source distribution P and target distribution Q
-        P = torch.softmax(pos_sims / self.temperature, dim=-1)
-        Q = torch.log_softmax(scores / self.temperature, dim=-1)
+        input = torch.log_softmax(pos_sims / self.temperature, dim=-1)
+        target = torch.softmax(scores / self.temperature, dim=-1)
 
         # calculate Kullback-Leibler Divergence Loss
-        loss = loss_fct(Q, P)
+        loss = loss_fct(input, target)
         return loss
 
     def encode(self,
