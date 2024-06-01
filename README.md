@@ -32,6 +32,10 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码�
 
 - 3/18/2024:发布RAG-Retrieval [RAG-Retrieval知乎介绍](https://zhuanlan.zhihu.com/p/683483778)
 
+# Roadmap
+
+- [RAG-Retrieval Roadmap](https://www.notion.so/RAG-Retrieval-Roadmap-c817257e3e8a484b8850cac40a3fcf88)
+
 
 
 # 使用统一的方式推理不同的RAG Reranker模型
