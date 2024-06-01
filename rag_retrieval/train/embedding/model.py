@@ -31,18 +31,19 @@ class Embedding(nn.Module):
 
         return embedding
 
-    def forward(self,
-                query_input_ids,  # [batch_size,seq_len]
-                query_attention_mask,  # [batch_size,seq_len]
+    def forward(
+            self,
+            query_input_ids,  # [batch_size,seq_len]
+            query_attention_mask,  # [batch_size,seq_len]
 
-                pos_doc_input_ids=None,  # [batch_size,seq_len]
-                pos_doc_attention_mask=None,  # [batch_size,seq_len]
+            pos_doc_input_ids=None,  # [batch_size,seq_len]
+            pos_doc_attention_mask=None,  # [batch_size,seq_len]
 
-                neg_doc_input_ids=None,  # [batch_size*neg_nums,seq_len]
-                neg_doc_attention_mask=None,  # [batch_size*neg_nums,seq_len]
+            neg_doc_input_ids=None,  # [batch_size*neg_nums,seq_len]
+            neg_doc_attention_mask=None,  # [batch_size*neg_nums,seq_len]
 
-                scores=None,  # [batch_size]
-                ):
+            scores=None,  # [batch_size]
+    ):
         query_embeddings = self.get_embedding(query_input_ids, query_attention_mask)
 
         res_dict = {}
@@ -114,13 +115,13 @@ class Embedding(nn.Module):
         loss_fct = nn.KLDivLoss(reduction="batchmean")
 
         # [batch_size] <- [batch_size,dim],[batch_size,dim]
-        pos_sims = torch.einsum('bn, bn -> b', query_embeddings, pos_doc_embeddings)  # calculate every pair simlilarity score
+        sims = torch.einsum('bn, bn -> b', query_embeddings, pos_doc_embeddings)  # calculate every pair simlilarity score
 
         # target scores of query-document pairs
         scores = scores.to(query_embeddings.device)
 
-        # scale to get source distribution P and target distribution Q
-        input = torch.log_softmax(pos_sims / self.temperature, dim=-1)
+        # scale to get source distribution input and target distribution target
+        input = torch.log_softmax(sims / self.temperature, dim=-1)
         target = torch.softmax(scores / self.temperature, dim=-1)
 
         # calculate Kullback-Leibler Divergence Loss
