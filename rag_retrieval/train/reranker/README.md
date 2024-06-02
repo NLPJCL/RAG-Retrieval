@@ -15,7 +15,7 @@ pip install -r requirements.txt
 
 对于排序模型，支持以下两种数据进行微调：
 
-- 标注数据的相关性为二分类数据：query和doc的关系只有正例和负例。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.json)的json文件。
+- 标注数据的相关性为二分类数据：query和doc的关系只有正例和负例。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.jsonl)的jsonl文件。
 ```
 {"query": str, "pos": List[str], "neg":List[str]}
 ```
@@ -34,7 +34,7 @@ query\tdoc\tlabel
 ```bash
  CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_reranker.py  \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
---dataset "../../../example_data/t2rank_100.json" \
+--dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \
 --loss_type "classfication" \
 --batch_size 32 \
