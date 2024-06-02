@@ -9,13 +9,14 @@ import math
 
 
 class EmbeddingDataset(Dataset):
-    def __init__(self,
-                 train_data_path,
-                 tokenizer,
-                 neg_nums,
-                 query_max_len=128,
-                 passage_max_len=512,
-                 ):
+    def __init__(
+            self,
+            train_data_path,
+            tokenizer,
+            neg_nums,
+            query_max_len=128,
+            passage_max_len=512,
+    ):
 
         self.query_max_len = query_max_len
         self.passage_max_len = passage_max_len
