@@ -15,7 +15,7 @@
 * `data_dir` 改为 [FlashRAG_datasets](https://huggingface.co/datasets/ignore/FlashRAG_datasets) 下载到本地的路径
 * `corpus_path` 改为 wiki-18.jsonl 对应的路径
 
-这里我们以NQ的测试集为例，得到基于LLaMA-3-Instruct的概率得到的数据集
+这里我们以NQ的测试集为例，得到基于LLaMA-3-Instruct的输出概率得到的数据集。这里的计算主要参考了 [REPLUG](https://arxiv.org/abs/2301.12652)
 
 使用如下命令完成数据集的建立：
 ```shell
@@ -38,11 +38,15 @@ python3 get_lm_probs_dataset.py \
 
 我们使用`train/train_embeddings.py`使用此数据进行训练，即可得到面向NQ任务的专属检索器
 
-我们将FlashRAG中的检索器地址换成我们训练的检索器，并重新建立索引在NQ上测试，会得到如下结果，微调后的模型在NQ测试的表现明显优于原方法，在Naive-RAG和REPLUG上都提升了5个点。
+我们将FlashRAG中的检索器地址换成我们训练的检索器，并重新建立索引在NQ上测试，会得到如下结果，微调后的模型在NQ测试的表现明显优于原方法，在几个先进方法基础上都提升了5个点左右。
 
 |     Method     | NQ EM Score | NQ F1 Score |
 |:--------------:|:-----------:|:-----------:|
-|     REPLUG     |    31.36    |    41.53    |
-| + **finetune** |  **36.65**  |  **46.78**  |
 |   Naive RAG    |    36.09    |    47.23    |
 | + **finetune** |  **41.50**  |  **52.69**  |
+|     REPLUG     |    31.36    |    41.53    |
+| + **finetune** |  **36.65**  |  **46.78**  |
+|  Iter-Retgen   |    37.06    |    47.81    |
+| + **finetune** |  **42.02**  |  **53.15**  |
+|      SURE      |    37.62    |    49.24    |
+| + **finetune** |  **41.25**  |  **53.20**  |
