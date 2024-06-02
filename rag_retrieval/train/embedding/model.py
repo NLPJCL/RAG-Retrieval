@@ -107,11 +107,12 @@ class Embedding(nn.Module):
 
         return loss
 
-    def pair_kl_loss(self,
-                     query_embeddings,
-                     pos_doc_embeddings,
-                     scores,
-                     ):
+    def pair_kl_loss(
+            self,
+            query_embeddings,
+            pos_doc_embeddings,
+            scores,
+    ):
         loss_fct = nn.KLDivLoss(reduction="batchmean")
 
         # [batch_size] <- [batch_size,dim],[batch_size,dim]
@@ -128,12 +129,13 @@ class Embedding(nn.Module):
         loss = loss_fct(input, target)
         return loss
 
-    def encode(self,
-               sentences,
-               device='cpu',
-               max_len=512,
-               batch_size=512,
-               ):
+    def encode(
+            self,
+            sentences,
+            device='cpu',
+            max_len=512,
+            batch_size=512,
+    ):
         self.device = device
         self.to(self.device)
         all_embeddings = []
@@ -159,10 +161,11 @@ class Embedding(nn.Module):
 
         return all_embeddings
 
-    def preprocess(self,
-                   sentences,
-                   max_len=512
-                   ):
+    def preprocess(
+            self,
+            sentences,
+            max_len=512
+    ):
 
         tokens = self.tokenizer(sentences, return_tensors="pt", padding="max_length", truncation=True, max_length=max_len)
 
