@@ -38,9 +38,11 @@ python3 get_lm_probs_dataset.py \
 
 我们使用`train/train_embeddings.py`使用此数据进行训练，即可得到面向NQ任务的专属检索器
 
-我们将FlashRAG中的检索器地址换成我们训练的检索器，并重新建立索引在NQ上测试，会得到如下结果，微调后的模型在NQ测试的表现明显优于原方法，在 `REPLUG` 上提升了5个点左右
+我们将FlashRAG中的检索器地址换成我们训练的检索器，并重新建立索引在NQ上测试，会得到如下结果，微调后的模型在NQ测试的表现明显优于原方法，在Naive-RAG和REPLUG上都提升了5个点。
 
 |     Method     | NQ EM Score | NQ F1 Score |
 |:--------------:|:-----------:|:-----------:|
 |     REPLUG     |    31.36    |    41.53    |
 | + **finetune** |  **36.65**  |  **46.78**  |
+|   Naive RAG    |    36.09    |    47.23    |
+| + **finetune** |  **41.50**  |  **52.69**  |
