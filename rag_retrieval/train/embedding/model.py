@@ -76,7 +76,7 @@ class Embedding(nn.Module):
 
         loss_fct = nn.CrossEntropyLoss()
         # [batch_size,batch_size]=[batch_size,dim],[dim,batch_size]
-        sim_matrix = query_embeddings @ pos_doc_embeddings.unsqueeze.transpose(-1, -2)
+        sim_matrix = query_embeddings @ pos_doc_embeddings.transpose(-1, -2)
         sim_matrix = sim_matrix / self.temperature
         # [batch_size]
         labels = torch.arange(query_embeddings.size(0), device=query_embeddings.device, dtype=torch.long)
