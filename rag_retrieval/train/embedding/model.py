@@ -13,12 +13,12 @@ import subprocess
 
 class Embedding(nn.Module):
     def __init__(
-        self,
-        sentence_model=None,
-        tokenizer=None,
-        use_mrl = False,
-        mrl_dims = [],
-        temperature=0.02,
+            self,
+            sentence_model=None,
+            tokenizer=None,
+            use_mrl=False,
+            mrl_dims=[],
+            temperature=0.02,
     ):
         super().__init__()
 
@@ -37,33 +37,34 @@ class Embedding(nn.Module):
         return embedding
 
     def forward(
-        self,
-        query_input_ids,  # [batch_size,seq_len]
-        query_attention_mask,  # [batch_size,seq_len]
-        pos_doc_input_ids=None,  # [batch_size,seq_len]
-        pos_doc_attention_mask=None,  # [batch_size,seq_len]
-        neg_doc_input_ids=None,  # [batch_size*neg_nums,seq_len]
-        neg_doc_attention_mask=None,  # [batch_size*neg_nums,seq_len]
-        scores=None,  # [batch_size]
+            self,
+            query_input_ids,  # [batch_size,seq_len]
+            query_attention_mask,  # [batch_size,seq_len]
+            pos_doc_input_ids=None,  # [batch_size,seq_len]
+            pos_doc_attention_mask=None,  # [batch_size,seq_len]
+            neg_doc_input_ids=None,  # [batch_size*neg_nums,seq_len]
+            neg_doc_attention_mask=None,  # [batch_size*neg_nums,seq_len]
+            scores=None,  # [batch_size]
     ):
         query_embeddings = self.get_embedding(query_input_ids, query_attention_mask)
 
         res_dict = {}
         res_dict['query_embeddings'] = query_embeddings
+        model_dim = query_embeddings.shape[-1]
 
         # only pos pair loss
         if pos_doc_input_ids is not None and neg_doc_input_ids is None and scores is None:
 
             pos_doc_embeddings = self.get_embedding(pos_doc_input_ids, pos_doc_attention_mask)
 
-            if self.use_mrl:       
+            if self.use_mrl:
                 loss = torch.tensor(0.0, device=query_embeddings.device)
                 for num_dim in self.mrl_dims:
-                    query_emb,pos_doc_emb = query_embeddings[...,:num_dim],pos_doc_embeddings[...,:num_dim]
-                    loss += self.pair_inbatch_softmax_loss(query_emb,pos_doc_emb)
+                    query_emb, pos_doc_emb = query_embeddings[..., :num_dim], pos_doc_embeddings[..., :num_dim]
+                    loss += self.pair_inbatch_softmax_loss(query_emb, pos_doc_emb)
                 loss = loss / len(self.mrl_dims)
             else:
-                loss = self.pair_inbatch_softmax_loss(query_embeddings,pos_doc_embeddings)
+                loss = self.pair_inbatch_softmax_loss(query_embeddings, pos_doc_embeddings)
             res_dict['loss'] = loss
 
         # both pos and neg triplet loss
@@ -72,35 +73,45 @@ class Embedding(nn.Module):
             pos_doc_embeddings = self.get_embedding(pos_doc_input_ids, pos_doc_attention_mask)
             neg_doc_embeddings = self.get_embedding(neg_doc_input_ids, neg_doc_attention_mask)
 
-            if self.use_mrl:           
+            if self.use_mrl:
                 loss = torch.tensor(0.0, device=query_embeddings.device)
                 for num_dim in self.mrl_dims:
-                    query_emb,pos_doc_emb,neg_doc_emb = query_embeddings[...,:num_dim],pos_doc_embeddings[...,:num_dim],neg_doc_embeddings[...,:num_dim]
-                    loss += self.triplet_inbatch_softmax_loss(query_emb,pos_doc_emb,neg_doc_emb)
+                    query_emb, pos_doc_emb, neg_doc_emb = query_embeddings[..., :num_dim], pos_doc_embeddings[..., :num_dim], neg_doc_embeddings[...,
+                                                                                                                              :num_dim]
+                    loss += self.triplet_inbatch_softmax_loss(query_emb, pos_doc_emb, neg_doc_emb)
                 loss = loss / len(self.mrl_dims)
             else:
-                loss = self.triplet_inbatch_softmax_loss(query_embeddings,pos_doc_embeddings,neg_doc_embeddings)
+                loss = self.triplet_inbatch_softmax_loss(query_embeddings, pos_doc_embeddings, neg_doc_embeddings)
 
             res_dict['loss'] = loss
 
         elif pos_doc_input_ids is not None and scores is not None:
 
             pos_doc_embeddings = self.get_embedding(pos_doc_input_ids, pos_doc_attention_mask)
-            res_dict['loss'] = self.pair_kl_loss(query_embeddings, pos_doc_embeddings, scores)
+
+            if self.use_mrl:
+                loss = torch.tensor(0.0, device=query_embeddings.device)
+                for num_dim in self.mrl_dims:
+                    query_emb, pos_doc_emb = query_embeddings[..., :num_dim], pos_doc_embeddings[..., :num_dim]
+                    loss += self.pair_kl_loss(query_emb, pos_doc_emb, scores)
+                loss = loss / len(self.mrl_dims)
+            else:
+                loss = self.pair_kl_loss(query_embeddings, pos_doc_embeddings, scores)
+            res_dict['loss'] = loss
 
         return res_dict
 
     def pair_inbatch_softmax_loss(
-        self,
-        query_embeddings,
-        pos_doc_embeddings,
+            self,
+            query_embeddings,
+            pos_doc_embeddings,
     ):
 
         loss_fct = nn.CrossEntropyLoss()
 
         # normalization
-        query_embeddings = F.normalize(query_embeddings,p=2,dim=-1)
-        pos_doc_embeddings = F.normalize(pos_doc_embeddings,p=2,dim=-1)
+        query_embeddings = F.normalize(query_embeddings, p=2, dim=-1)
+        pos_doc_embeddings = F.normalize(pos_doc_embeddings, p=2, dim=-1)
 
         # [batch_size,batch_size]<- [batch_size,dim],[dim,batch_size]
         sim_matrix = query_embeddings @ pos_doc_embeddings.transpose(-1, -2)
@@ -111,17 +122,17 @@ class Embedding(nn.Module):
         return loss
 
     def triplet_inbatch_softmax_loss(
-        self,
-        query_embeddings,  # [batch_size,dim]
-        pos_doc_embeddings,  # [batch_size,dim]
-        neg_doc_embeddings,  # [batch_size*neg_nums,dim]
+            self,
+            query_embeddings,  # [batch_size,dim]
+            pos_doc_embeddings,  # [batch_size,dim]
+            neg_doc_embeddings,  # [batch_size*neg_nums,dim]
     ):
         loss_fct = nn.CrossEntropyLoss()
 
         # normalization
-        query_embeddings = F.normalize(query_embeddings,p=2,dim=-1)
-        pos_doc_embeddings = F.normalize(pos_doc_embeddings,p=2,dim=-1)
-        neg_doc_embeddings = F.normalize(neg_doc_embeddings,p=2,dim=-1)
+        query_embeddings = F.normalize(query_embeddings, p=2, dim=-1)
+        pos_doc_embeddings = F.normalize(pos_doc_embeddings, p=2, dim=-1)
+        neg_doc_embeddings = F.normalize(neg_doc_embeddings, p=2, dim=-1)
 
         # [batch_size] <- [batch_size,dim],[batch_size,dim]
         pos_sim_matrix = torch.sum(query_embeddings * pos_doc_embeddings, dim=-1)
@@ -141,10 +152,10 @@ class Embedding(nn.Module):
         return loss
 
     def pair_kl_loss(
-        self,
-        query_embeddings,
-        pos_doc_embeddings,
-        scores,
+            self,
+            query_embeddings,
+            pos_doc_embeddings,
+            scores,
     ):
         loss_fct = nn.KLDivLoss(reduction="batchmean")
 
@@ -163,11 +174,11 @@ class Embedding(nn.Module):
         return loss
 
     def encode(
-        self,
-        sentences,
-        device='cpu',
-        max_len=512,
-        batch_size=512,
+            self,
+            sentences,
+            device='cpu',
+            max_len=512,
+            batch_size=512,
     ):
         self.device = device
         self.to(self.device)
@@ -195,9 +206,9 @@ class Embedding(nn.Module):
         return all_embeddings
 
     def preprocess(
-        self,
-        sentences,
-        max_len=512
+            self,
+            sentences,
+            max_len=512
     ):
 
         tokens = self.tokenizer(sentences, return_tensors="pt", padding="max_length", truncation=True, max_length=max_len)
@@ -225,33 +236,33 @@ class Embedding(nn.Module):
             return sum([len(t) for t in text])  # Sum of length of individual strings
 
     def save_pretrained(
-        self,
-        save_dir
+            self,
+            save_dir
     ):
 
         self.model.save(save_dir, safe_serialization=False)
 
     @classmethod
     def from_pretrained(
-        cls,
-        model_name_or_path,
-        use_mrl = False,
-        mrl_dims = [],
-        temperature=0.02,
+            cls,
+            model_name_or_path,
+            use_mrl=False,
+            mrl_dims=[],
+            temperature=0.02,
     ):
         sentence_model = SentenceTransformer(model_name_or_path)
 
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 
         if use_mrl:
-            #判断是否是mrl的模型。
-            if len(sentence_model._modules)==3 and isinstance(sentence_model._last_module(),models.Dense):
+            # 判断是否是mrl的模型。
+            if len(sentence_model._modules) == 3 and isinstance(sentence_model._last_module(), models.Dense):
                 print('sentence_transformers model is mrl model. ')
                 scaling_layer_out_dim = sentence_model.get_sentence_embedding_dimension()
 
                 if scaling_layer_out_dim < max(mrl_dims):
                     print('max mrl_dims is greater than the maximum dimensions of the model')
-                    mrl_dims = [ dim for dim in mrl_dims if dim <= scaling_layer_out_dim ]
+                    mrl_dims = [dim for dim in mrl_dims if dim <= scaling_layer_out_dim]
                     print(f'reduce mrl_dims to {str(mrl_dims)}')
             else:
                 print('sentence_transformers model is not mrl model, init scaling_layer weight.')
@@ -267,7 +278,6 @@ class Embedding(nn.Module):
 
 
 def test_model_embedding():
-    
     cuda_device = 'cuda:0'
     ckpt_path = ''
     embedding = Embedding.from_pretrained(
