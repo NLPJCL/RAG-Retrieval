@@ -242,11 +242,11 @@ class Embedding(nn.Module):
 
     @classmethod
     def from_pretrained(
-            cls,
-            model_name_or_path,
-            use_mrl=False,
-            mrl_dims=[],
-            temperature=0.02,
+        cls,
+        model_name_or_path,
+        use_mrl=False,
+        mrl_dims=[],
+        temperature=0.02,
     ):
         sentence_model = SentenceTransformer(model_name_or_path)
 
