@@ -56,6 +56,7 @@ def parse_args():
     parser.add_argument('--mixed_precision', default='fp16', help='')
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1)
     parser.add_argument('--use_mrl', action='store_true', help='if mrl loss')
+    parser.add_argument('--mrl_dims', type=str, help='list of mrl dims', default='128, 256, 512, 768, 1024, 1280, 1536, 1792')
 
     args = parser.parse_args()
 
@@ -100,15 +101,14 @@ def main():
     accelerator.print(f'use_mrl: {args.use_mrl}')
 
     if args.use_mrl:
-        # mrl_dims = [768]
-        mrl_dims = [128,256, 512, 768, 1024, 1280,1536,1792]
+        mrl_dims = list(map(int, args.mrl_dims.split(",")))
     else:
         mrl_dims = []
 
     accelerator.print(f'mrl_dims: {str(mrl_dims)}')
 
     model = Embedding.from_pretrained(
-        model_name_or_path = args.model_name_or_path, 
+        model_name_or_path=args.model_name_or_path,
         temperature=args.temperature,
         use_mrl=args.use_mrl,
         mrl_dims=mrl_dims
