@@ -82,7 +82,6 @@ class Embedding(nn.Module):
                 loss = loss / len(self.mrl_dims)
             else:
                 loss = self.triplet_inbatch_softmax_loss(query_embeddings, pos_doc_embeddings, neg_doc_embeddings)
-
             res_dict['loss'] = loss
 
         elif pos_doc_input_ids is not None and scores is not None:
