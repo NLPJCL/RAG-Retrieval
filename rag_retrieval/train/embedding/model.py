@@ -50,7 +50,6 @@ class Embedding(nn.Module):
 
         res_dict = {}
         res_dict['query_embeddings'] = query_embeddings
-        model_dim = query_embeddings.shape[-1]
 
         # only pos pair loss
         if pos_doc_input_ids is not None and neg_doc_input_ids is None and scores is None:
