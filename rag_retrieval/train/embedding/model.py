@@ -13,12 +13,12 @@ import subprocess
 
 class Embedding(nn.Module):
     def __init__(
-            self,
-            sentence_model=None,
-            tokenizer=None,
-            use_mrl=False,
-            mrl_dims=[],
-            temperature=0.02,
+        self,
+        sentence_model=None,
+        tokenizer=None,
+        use_mrl=False,
+        mrl_dims=[],
+        temperature=0.02,
     ):
         super().__init__()
 
@@ -37,14 +37,14 @@ class Embedding(nn.Module):
         return embedding
 
     def forward(
-            self,
-            query_input_ids,  # [batch_size,seq_len]
-            query_attention_mask,  # [batch_size,seq_len]
-            pos_doc_input_ids=None,  # [batch_size,seq_len]
-            pos_doc_attention_mask=None,  # [batch_size,seq_len]
-            neg_doc_input_ids=None,  # [batch_size*neg_nums,seq_len]
-            neg_doc_attention_mask=None,  # [batch_size*neg_nums,seq_len]
-            scores=None,  # [batch_size]
+        self,
+        query_input_ids,  # [batch_size,seq_len]
+        query_attention_mask,  # [batch_size,seq_len]
+        pos_doc_input_ids=None,  # [batch_size,seq_len]
+        pos_doc_attention_mask=None,  # [batch_size,seq_len]
+        neg_doc_input_ids=None,  # [batch_size*neg_nums,seq_len]
+        neg_doc_attention_mask=None,  # [batch_size*neg_nums,seq_len]
+        scores=None,  # [batch_size]
     ):
         query_embeddings = self.get_embedding(query_input_ids, query_attention_mask)
 
@@ -100,9 +100,9 @@ class Embedding(nn.Module):
         return res_dict
 
     def pair_inbatch_softmax_loss(
-            self,
-            query_embeddings,
-            pos_doc_embeddings,
+        self,
+        query_embeddings,
+        pos_doc_embeddings,
     ):
 
         loss_fct = nn.CrossEntropyLoss()
@@ -120,10 +120,10 @@ class Embedding(nn.Module):
         return loss
 
     def triplet_inbatch_softmax_loss(
-            self,
-            query_embeddings,  # [batch_size,dim]
-            pos_doc_embeddings,  # [batch_size,dim]
-            neg_doc_embeddings,  # [batch_size*neg_nums,dim]
+        self,
+        query_embeddings,  # [batch_size,dim]
+        pos_doc_embeddings,  # [batch_size,dim]
+        neg_doc_embeddings,  # [batch_size*neg_nums,dim]
     ):
         loss_fct = nn.CrossEntropyLoss()
 
@@ -150,10 +150,10 @@ class Embedding(nn.Module):
         return loss
 
     def pair_kl_loss(
-            self,
-            query_embeddings,
-            pos_doc_embeddings,
-            scores,
+        self,
+        query_embeddings,
+        pos_doc_embeddings,
+        scores,
     ):
         loss_fct = nn.KLDivLoss(reduction="batchmean")
 
@@ -172,11 +172,11 @@ class Embedding(nn.Module):
         return loss
 
     def encode(
-            self,
-            sentences,
-            device='cpu',
-            max_len=512,
-            batch_size=512,
+        self,
+        sentences,
+        device='cpu',
+        max_len=512,
+        batch_size=512,
     ):
         self.device = device
         self.to(self.device)
@@ -204,9 +204,9 @@ class Embedding(nn.Module):
         return all_embeddings
 
     def preprocess(
-            self,
-            sentences,
-            max_len=512
+        self,
+        sentences,
+        max_len=512
     ):
 
         tokens = self.tokenizer(sentences, return_tensors="pt", padding="max_length", truncation=True, max_length=max_len)
@@ -234,8 +234,8 @@ class Embedding(nn.Module):
             return sum([len(t) for t in text])  # Sum of length of individual strings
 
     def save_pretrained(
-            self,
-            save_dir
+        self,
+        save_dir
     ):
 
         self.model.save(save_dir, safe_serialization=False)
