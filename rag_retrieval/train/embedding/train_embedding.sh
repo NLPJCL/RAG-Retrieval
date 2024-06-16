@@ -36,6 +36,7 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../confi
 # --lr 2e-5 \
 # --epochs 2 \
 # --use_mrl \
+# --mrl_dims "128, 256, 512, 768, 1024, 1280, 1536, 1792" \
 # --save_on_epoch_end 1 \
 # --gradient_accumulation_steps 24  \
 # --log_with 'wandb' \
