@@ -28,6 +28,8 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码�
 
 # 最新更新
 
+- 6/5/2024: RAG-Retrieval的Embedding模型的MRL loss实现。[RAG-Retrieval：让MRL loss成为训练向量(embedding)模型的标配](https://zhuanlan.zhihu.com/p/701884479)
+
 - 5/5/2024:发布RAG-Retrieval的轻量级的python库[RAG-Retrieval：你的RAG应用值得更好的排序推理框架](https://zhuanlan.zhihu.com/p/692404995)
 
 - 3/18/2024:发布RAG-Retrieval [RAG-Retrieval知乎介绍](https://zhuanlan.zhihu.com/p/683483778)
@@ -87,7 +89,7 @@ pip install rag-retrieval
 
 **rag-retrieval包详细的使用方法和注意事项可以参考[Tutorial](https://github.com/NLPJCL/RAG-Retrieval/blob/master/examples/Reranker_Tutorial.md)**
 
-**我们做了大量的测试与下面原有推理框架对齐，详见[tests](https://github.com/NLPJCL/RAG-Retrieval/tree/master/tests)，他们需要不同的模块来执行，rag_retrieval则使用了统一的接口。**
+**我们做了大量的测试与下面原有推理框架对齐，详见[Tests](https://github.com/NLPJCL/RAG-Retrieval/tree/master/tests)，他们需要不同的模块来执行，rag_retrieval则使用了统一的接口。**
 
 如 FlagEmbedding的 FlagReranker,FlagLLMReranker,LayerWiseFlagLLMReranker。
 
