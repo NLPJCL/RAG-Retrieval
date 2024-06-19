@@ -26,6 +26,10 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码�
 
 ![ColBERT](pictures/models.png)
 
+# 社区交流
+
+[加入我们微信群聊](https://github.com/NLPJCL/RAG-Retrieval/blob/master/pictures/WechatIMG322.jpg)
+
 # 最新更新
 
 - 6/5/2024: RAG-Retrieval的Embedding模型的MRL loss实现。[RAG-Retrieval：让MRL loss成为训练向量(embedding)模型的标配](https://zhuanlan.zhihu.com/p/701884479)
