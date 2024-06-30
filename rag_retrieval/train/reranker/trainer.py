@@ -152,8 +152,9 @@ def evaluate(
     loss_tracker = loss_tracker or LossTracker()
     for batch in dataloader:
         with torch.inference_mode():
-            batch_output = model(batch)
-            loss_tracker.update(batch_output['loss'])
+            batch_output = model(batch[0],batch[1])
+            loss = batch_output.loss
+            loss_tracker.update(loss)
     loss = loss_tracker.loss
     loss_tracker.on_epoch_end()
     return loss
