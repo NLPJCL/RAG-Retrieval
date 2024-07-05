@@ -30,7 +30,7 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码�
 
 # 社区交流
 
-[加入我们微信群聊](https://github.com/NLPJCL/RAG-Retrieval/blob/master/pictures/WechatIMG322.jpg)
+[加入我们微信群聊](https://www.notion.so/RAG-Retrieval-Roadmap-c817257e3e8a484b8850cac40a3fcf88)
 
 # 最新更新
 
