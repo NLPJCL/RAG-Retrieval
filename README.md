@@ -36,6 +36,8 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码�
 
 - 6/5/2024: RAG-Retrieval的Embedding模型的MRL loss实现。[RAG-Retrieval：让MRL loss成为训练向量(embedding)模型的标配](https://zhuanlan.zhihu.com/p/701884479)
 
+- 6/2/2024: RAG-Retrieval实现基于LLM偏好监督RAG检索器微调。[RAG-Retrieval实现基于LLM偏好监督RAG检索器微调](https://zhuanlan.zhihu.com/p/701215443)
+
 - 5/5/2024:发布RAG-Retrieval的轻量级的python库[RAG-Retrieval：你的RAG应用值得更好的排序推理框架](https://zhuanlan.zhihu.com/p/692404995)
 
 - 3/18/2024:发布RAG-Retrieval [RAG-Retrieval知乎介绍](https://zhuanlan.zhihu.com/p/683483778)
