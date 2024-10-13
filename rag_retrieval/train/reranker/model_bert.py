@@ -9,7 +9,7 @@ class CrossEncoder(nn.Module):
     def __init__(
         self,
         hf_model = None,
-        tokenizer = None, 
+        tokenizer = None,
         cuda_device = 'cpu', 
         loss_type = 'classfication',
     ):
@@ -102,7 +102,7 @@ class CrossEncoder(nn.Module):
 
 
 def test_relecance():
-    ckpt_path='../chinese-roberta-wwm-ext'
+    ckpt_path='hfl/chinese-roberta-wwm-ext'
     device = 'cuda:0'
     cross_encode=CrossEncoder.from_pretrained(ckpt_path,num_labels=1,cuda_device=device)
     cross_encode.eval()
@@ -123,4 +123,3 @@ def test_relecance():
 
 if __name__ == "__main__":
     test_relecance()
-
