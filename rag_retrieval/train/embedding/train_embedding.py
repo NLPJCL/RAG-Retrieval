@@ -82,7 +82,7 @@ def main():
         project_config=project_config
     )
 
-    accelerator.init_trackers('embedding', config=args)
+    accelerator.init_trackers('embedding', config=vars(args))
 
     accelerator.print(f'Batch size: {args.batch_size}')
     accelerator.print(f'Start with seed: {args.seed}')

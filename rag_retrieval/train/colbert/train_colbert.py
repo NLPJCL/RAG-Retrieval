@@ -85,7 +85,7 @@ def main():
         project_config=project_config
     )
     
-    accelerator.init_trackers('colbert', config=args)
+    accelerator.init_trackers('colbert', config=vars(args))
 
     accelerator.print(f'Model_name_or_path: {args.model_name_or_path}')
     accelerator.print(f'Output dir: {args.output_dir}')
