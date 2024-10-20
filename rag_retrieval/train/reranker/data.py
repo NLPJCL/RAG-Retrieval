@@ -156,6 +156,50 @@ class LLMRankerDataset(Dataset):
                 
         return tokens, label_batch
 
+class RankerDistillDataset(Dataset):
+    def __init__(self,
+            train_data_path,
+            tokenizer,
+            max_len=512,
+        ):
+
+        self.max_len = max_len
+        self.train_data = self.read_train_data(train_data_path)
+        self.tokenizer = tokenizer
+
+
+    def read_train_data(self,train_data_path):
+        train_data = []
+
+        with open(train_data_path) as f:
+            for line in tqdm.tqdm(f):                
+                data_dic=json.loads(line.strip())
+                train_data.append([data_dic['query'],data_dic['content'],float(data_dic['score'])])
+
+        return train_data
+    
+    def __len__(self):
+        return len(self.train_data)
+
+    def __getitem__(self,idx):
+        return self.train_data[idx]
+
+    def collate_fn(self,batch):
+
+        all_batch_pairs=[]
+        all_labels=[]
+        for item in batch:
+            all_batch_pairs.append([item[0],item[1]])
+            all_labels.append(item[2])
+
+        tokens=self.tokenizer.batch_encode_plus(all_batch_pairs,add_special_tokens=True,padding='max_length',truncation=True,
+                            max_length=self.max_len,return_tensors='pt')
+
+        label_batch = torch.tensor(all_labels,dtype=torch.float16)
+        
+        return tokens, label_batch
+
+
 
 
 def test_RankerDataset():

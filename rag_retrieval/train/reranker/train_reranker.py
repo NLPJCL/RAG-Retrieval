@@ -6,7 +6,7 @@ from accelerate.utils import  set_seed, ProjectConfiguration
 from model_bert import CrossEncoder
 from model_llm import LLMDecoder
 from transformers import AutoTokenizer, get_cosine_schedule_with_warmup
-from data import RankerDataset, RankerMulabelDataset, LLMRankerDataset
+from data import RankerDataset, RankerMulabelDataset, LLMRankerDataset, RankerDistillDataset
 from torch.utils.data import DataLoader
 from trainer import Trainer
 from accelerate import Accelerator
@@ -48,12 +48,12 @@ def parse_args():
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--seed', type=int, default=666)
     parser.add_argument("--warmup_proportion", type=float,default=0.1)
-    parser.add_argument("--loss_type", type=str,default='classfication',help='chose from [regression,classficatio]' )
+    parser.add_argument("--loss_type", type=str,default='classfication',help='chose from [classficatio,regression_mse,regression_ce]' )
     parser.add_argument("--log_with", type=str,default='wandb',help='wandb,tensorboard' )
     parser.add_argument('--mixed_precision', default='fp16', help='')
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1)
     parser.add_argument('--num_labels', type=int, default=1, help='mlp dim')
-
+    
     args = parser.parse_args()
     return args
 
@@ -105,9 +105,9 @@ def main():
             train_datast = LLMRankerDataset(args.dataset, tokenizer, args.max_len)
         else:
             train_datast = RankerDataset(args.dataset, tokenizer, args.max_len)
-    elif args.loss_type == 'regression':
-        train_datast = RankerMulabelDataset(args.dataset, tokenizer, args.max_len)
-    
+    elif args.loss_type == 'regression_mse' or args.loss_type == 'regression_ce':
+        train_datast = RankerDistillDataset(args.dataset, tokenizer, args.max_len)
+
     num_workers=0
     train_dataloader = DataLoader(
         train_datast, 
