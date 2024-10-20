@@ -22,9 +22,11 @@
     <p>
 </h4>
 
-RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码。
-- 对于微调，**支持微调任意开源的RAG检索模型**，包括向量（embedding、图a）、迟交互式模型（colbert、图d）、交互式模型（cross encoder、图c）。
+RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)以及蒸馏(distill)代码。
+- 对于微调，**支持微调任意开源的RAG检索模型**，包括向量（embedding、图a）、迟交互式模型（colbert、图d）、交互式模型（cross encoder(bert)、图c, llm-based reranker）。
 - 对于推理，RAG-Retrieval专注于排序(reranker)，开发了一个轻量级的python库[rag-retrieval](https://pypi.org/project/rag-retrieval/),**提供统一的方式调用任意不同的RAG排序模型**。
+- 对于蒸馏，支持将基于LLM的reranker模型，蒸馏到基于bert的reranker模型中。
+
 
 ![ColBERT](pictures/models.png)
 
@@ -33,6 +35,9 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)代码�
 [加入我们微信群聊](https://www.notion.so/RAG-Retrieval-Roadmap-c817257e3e8a484b8850cac40a3fcf88)
 
 # 最新更新
+
+- 10/21/2024: RAG-Retrieval发布基于LLM做Reranker任务的两种不同方法，以及将其蒸馏到bert中的方法。[LLM在Reranker任务上的最佳实践？A simple experiment report（with code）](hhttps://zhuanlan.zhihu.com/p/987727357/)
+
 
 - 6/5/2024: RAG-Retrieval的Embedding模型的MRL loss实现。[RAG-Retrieval：让MRL loss成为训练向量(embedding)模型的标配](https://zhuanlan.zhihu.com/p/701884479)
 
@@ -137,10 +142,10 @@ cd ./rag_retrieval/train/colbert
 bash train_colbert.sh
 ```
 ## 排序（reranker,cross encoder）模型
-- 支持微调任意开源的reranker模型（例如，bge-rerank、bce-rerank等）
+- 支持微调任意开源的reranker模型（例如，bge-rerank、bce-rerank等）。
 - 支持两种数据进行微调：
     - query和doc的相关性为二分类（1代表相关、0代表不相关）
-    - query和doc的相关性为四分类。（3，2，1，0，相关性依次降低。）
+    - query和doc的相关性为score。（蒸馏任务）
 
 微调reranker模型流程，详细的流程可参考模型目录下的Tutorial。
 ```bash
