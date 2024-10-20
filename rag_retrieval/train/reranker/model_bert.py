@@ -27,14 +27,14 @@ class CrossEncoder(nn.Module):
         if labels is not None:
 
             logits = output.logits
-            if self.loss_type=='regression':
-                
+            if self.loss_type=='regression_mse':
                 logits = torch.sigmoid(logits)
                 loss_fct = MSELoss()
                 loss = loss_fct(logits.squeeze(),labels.squeeze())
-
+            elif self.loss_type=='regression_ce':
+                loss_fct = BCEWithLogitsLoss()
+                loss = loss_fct(logits.squeeze(),labels.squeeze())
             elif self.loss_type=='classfication':
-
                 loss_fct = BCEWithLogitsLoss()
                 loss = loss_fct(logits.squeeze(),labels.squeeze())
             output.loss=loss
