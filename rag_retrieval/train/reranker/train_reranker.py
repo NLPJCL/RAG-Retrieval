@@ -3,9 +3,10 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import torch
 from accelerate.utils import  set_seed, ProjectConfiguration
-from model  import CrossEncoder
+from model_bert import CrossEncoder
+from model_llm import LLMDecoder
 from transformers import AutoTokenizer, get_cosine_schedule_with_warmup
-from data import RankerDataset, RankerMulabelDataset
+from data import RankerDataset, RankerMulabelDataset, LLMRankerDataset
 from torch.utils.data import DataLoader
 from trainer import Trainer
 from accelerate import Accelerator
@@ -35,6 +36,7 @@ def parse_args():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name_or_path", default='hfl/chinese-roberta-wwm-ext')
+    parser.add_argument("--model_type", type=str,default='cross_encoder',help='chose from [cross_encoder,llm_decoder]' )
     parser.add_argument("--dataset", help='trainset file')
     parser.add_argument('--output_dir', help='output dir')
     parser.add_argument('--save_on_epoch_end', type=int, default=0)
@@ -48,18 +50,12 @@ def parse_args():
     parser.add_argument("--warmup_proportion", type=float,default=0.1)
     parser.add_argument("--loss_type", type=str,default='classfication',help='chose from [regression,classficatio]' )
     parser.add_argument("--log_with", type=str,default='wandb',help='wandb,tensorboard' )
-
-
     parser.add_argument('--mixed_precision', default='fp16', help='')
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1)
     parser.add_argument('--num_labels', type=int, default=1, help='mlp dim')
 
-
     args = parser.parse_args()
-
     return args
-
-
 
 
 def main():
@@ -83,31 +79,32 @@ def main():
     )
     
     accelerator.init_trackers('ranker', config=vars(args))
+    accelerator.print(f'train args:{vars(args)}')
 
-    accelerator.print(f'Batch size: {args.batch_size}')
-    accelerator.print(f'Start with seed: {args.seed}')
-    accelerator.print(f'Output dir: {args.output_dir}')
-    accelerator.print(f'Model_name_or_path: {args.model_name_or_path}')
-    accelerator.print(f'Dataset: {args.dataset}')
-    accelerator.print(f'mixed_precision: {args.mixed_precision}')
-    accelerator.print(f'loss_type: {args.loss_type}')
-    accelerator.print(f'gradient_accumulation_steps: {args.gradient_accumulation_steps}')
-    accelerator.print(f'lr: {args.lr}')
-    accelerator.print(f'max_len: {args.max_len}')
-
-
-
-    model = CrossEncoder.from_pretrained(
-        model_name_or_path = args.model_name_or_path, 
-        loss_type = args.loss_type,
-        num_labels = args.num_labels)
-        
-    model = accelerator.prepare(model)
+    if args.model_type == 'cross_encoder':
+        model = CrossEncoder.from_pretrained(
+            model_name_or_path = args.model_name_or_path, 
+            loss_type = args.loss_type,
+            num_labels = args.num_labels
+        )
+    elif args.model_type == 'llm_decoder':
+        model = LLMDecoder.from_pretrained(
+            model_name_or_path = args.model_name_or_path, 
+            loss_type = args.loss_type,
+            num_labels = args.num_labels
+        )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
+    if  tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    # make sure tokenizer is right pad in our logic
+    tokenizer.padding_side = "right"
 
     if args.loss_type == 'classfication':
-        train_datast = RankerDataset(args.dataset, tokenizer, args.max_len)
+        if args.model_type == 'llm_decoder':
+            train_datast = LLMRankerDataset(args.dataset, tokenizer, args.max_len)
+        else:
+            train_datast = RankerDataset(args.dataset, tokenizer, args.max_len)
     elif args.loss_type == 'regression':
         train_datast = RankerMulabelDataset(args.dataset, tokenizer, args.max_len)
     
@@ -136,8 +133,8 @@ def main():
 
     else:
         lr_scheduler = None
-
-    optimizer, lr_scheduler,train_dataloader = accelerator.prepare(optimizer, lr_scheduler,train_dataloader)
+    
+    model, optimizer, lr_scheduler,train_dataloader = accelerator.prepare(model, optimizer, lr_scheduler,train_dataloader)
     
     accelerator.wait_for_everyone()
 
@@ -153,20 +150,16 @@ def main():
         save_on_epoch_end = args.save_on_epoch_end,
         tokenizer = tokenizer,
     )
-
     accelerator.print(f'Start training for {args.epochs} epochs')
+    
     trainer.train()
-
     accelerator.wait_for_everyone()
-
     accelerator.print('Training finished')
+    
     accelerator.print('Saving model')
-
     save_dir=args.output_dir+ '/model'
-
     unwrapped_model = accelerator.unwrap_model(model)
     unwrapped_model.save_pretrained(save_dir)
-
     tokenizer.save_pretrained(save_dir)
 
 

@@ -8,7 +8,7 @@ pip install -r requirements.txt
 ```
 
 # 微调模型
-在安装好依赖后，我们通过具体的示例来展示如何利用我们自己的数据来微调开源的排序模型。(bge-rerank-base(v1),bce-rerank-basev1),或者你可以从BERT类模型(chinese-roberta-wwm-ext)开始从零训练自己的排序模型。
+在安装好依赖后，我们通过具体的示例来展示如何利用我们自己的数据来微调开源的排序模型。(bge-rerank-base(v1),bce-rerank-basev1),或者你可以从BERT类模型(chinese-roberta-wwm-ext),或者LLM类模型(Qwen/Qwen2.5-1.5B)开始从零训练自己的排序模型。
 
 # 数据格式
 
@@ -31,11 +31,13 @@ query\tdoc\tlabel
 # 训练
 执行bash train_reranker.sh即可，下面是train_reranker.sh执行的代码。
 
+#bert类模型,fsdp(ddp)
 ```bash
- CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_reranker.py  \
+ CUDA_VISIBLE_DEVICES="4,5,6,7"  nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_reranker.py \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
 --dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \
+--model_type "cross_encoder" \
 --loss_type "classfication" \
 --batch_size 32 \
 --lr 5e-5 \
@@ -49,15 +51,37 @@ query\tdoc\tlabel
  >./logs/t2ranking_100_example.log &
 ```
 
+#llm类模型,deepspeed(zero1-3)
+```bash
+CUDA_VISIBLE_DEVICES="4,5,6,7"  nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_reranker.py  \
+--model_name_or_path "Qwen/Qwen2.5-1.5B" \
+--dataset "../../../example_data/t2rank_100.jsonl" \
+--output_dir "./output/t2ranking_100_example_llm_decoder" \
+--model_type "llm_decoder" \
+--loss_type "classfication" \
+--mixed_precision 'bf16' \
+--batch_size 32 \
+--lr 5e-5 \
+--epochs 2 \
+--num_labels 1 \
+--log_with  'wandb' \
+--save_on_epoch_end 1 \
+--warmup_proportion 0.1 \
+--gradient_accumulation_steps 3 \
+--max_len 512 \
+ >./logs/t2ranking_100_example_llm_decoder.log &
+```
+
 **参数解释**
 - model_name_or_path:开源的embedding模型的名称或下载下来的服务器位置.（可以是：BAAI/bge-reranker-base,maidalun1020/bce-reranker-base_v1，也可以从普通的bert类模型开始训练，例如hfl/chinese-roberta-wwm-ext）
 - loss_type：可以在classfication以及regression选择。其中classfication是第一种数据格式，采用bce loss训练。regression是第二种数据格式，采用mse loss训练。
+- model_type: 可以在cross_encoder以及llm_decoder中选择。
 - save_on_epoch_end:是否每个epoch都将模型存储下来。
 - log_with：可视化工具，如果不设置用默认参数,也不会报错。
 - batch_size :每个batch query-doc的piar对的数量。
 - lr :学习率，一般1e-5到5e-5之间。
 
-默认使用fsdp来支持多卡训练模型，以下是配置文件的示例
+对于bert类模型，默认使用fsdp来支持多卡训练模型，以下是配置文件的示例.
 - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml)。如果要在chinese-roberta-wwm-ext的基础上从零开始训练的排序，采用该配置文件。
 - [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml),如果要在bge-reranker-base和bce-reranker-base_v1的基础上进行微调，采用该配置文件，因为两者在多语言的xlmroberta的基础上训练而来。
 
@@ -65,9 +89,12 @@ query\tdoc\tlabel
 - 修改train_reranker.sh的CUDA_VISIBLE_DEVICES="0"为你想要设置的多卡。
 - 修改上述提到的配置文件的num_processes为你想要跑的卡的数量。
 
+对于llm类模型，默认使用deepspeed来支持多卡训练模型。
+
+
 # 加载模型进行预测
 
-对于保存的模型，你可以很容易加载模型来进行预测。在model.py里，我们给了一个示例如何加载以及预测。
+对于保存的模型，你可以很容易加载模型来进行预测。在model_bert.py和model_llm.py里，我们分别给了一个示例如何加载以及预测。
 
 
 ```python
@@ -90,3 +117,21 @@ print(torch.sigmoid(res[2]))
 
 ```
 
+```python
+ckpt_path='Qwen/Qwen2.5-1.5B'
+device = 'cuda:0'
+llmreranker = LLMDecoder.from_pretrained(ckpt_path,num_labels=1,cuda_device=device)
+llmreranker.eval()
+llmreranker.model.to(device)
+
+input_lst=[
+['鹦鹉吃自己的小鱼吗','关注养鱼老道,关注更多观赏鱼实践知识,让我们简单养水、轻松养鱼!看来是我错怪了这对迷你鹦鹉鱼,极有可能是我当天看错了,人家本来是不吃孩子的,被我误认为吃了孩子,所以硬生生的给人家分了家。'],
+['我喜欢美国','我一点都不喜欢美国'],
+['泰山要多长时间爬上去','爬上泰山需要1-8个小时，具体的时间需要看个人的身体素质。专业登山运动员可能只需要1个多小时就可以登顶，有些身体素质比较低的，爬的慢的就需要5个多小时了。'],
+]
+res=llmreranker.compute_score(input_lst)
+print(torch.sigmoid(res[0]))
+print(torch.sigmoid(res[1]))
+print(torch.sigmoid(res[2]))
+
+```
