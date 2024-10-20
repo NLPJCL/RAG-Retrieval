@@ -36,7 +36,7 @@ RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)以及�
 
 # 最新更新
 
-- 10/21/2024: RAG-Retrieval发布基于LLM做Reranker任务的两种不同方法，以及将其蒸馏到bert中的方法。[LLM在Reranker任务上的最佳实践？A simple experiment report（with code）](hhttps://zhuanlan.zhihu.com/p/987727357/)
+- 10/21/2024: RAG-Retrieval发布基于LLM做Reranker任务的两种不同方法，以及将其蒸馏到bert中的方法。[LLM在Reranker任务上的最佳实践？A simple experiment report（with code）](https://zhuanlan.zhihu.com/p/987727357)
 
 
 - 6/5/2024: RAG-Retrieval的Embedding模型的MRL loss实现。[RAG-Retrieval：让MRL loss成为训练向量(embedding)模型的标配](https://zhuanlan.zhihu.com/p/701884479)
