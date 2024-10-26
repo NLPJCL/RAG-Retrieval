@@ -106,7 +106,7 @@ def main():
         else:
             train_datast = RankerDataset(args.dataset, tokenizer, max_len=args.max_len)
     elif args.loss_type == 'regression_mse' or args.loss_type == 'regression_ce':
-        train_datast = RankerDistillDataset(args.dataset, tokenizer, args.max_len)
+        train_datast = RankerDistillDataset(args.dataset, tokenizer, max_len=args.max_len)
 
     num_workers=0
     train_dataloader = DataLoader(
