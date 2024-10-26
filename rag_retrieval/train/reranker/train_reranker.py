@@ -102,9 +102,9 @@ def main():
 
     if args.loss_type == 'classfication':
         if args.model_type == 'llm_decoder':
-            train_datast = LLMRankerDataset(args.dataset, tokenizer, args.max_len)
+            train_datast = LLMRankerDataset(args.dataset, tokenizer, max_len=args.max_len)
         else:
-            train_datast = RankerDataset(args.dataset, tokenizer, args.max_len)
+            train_datast = RankerDataset(args.dataset, tokenizer, max_len=args.max_len)
     elif args.loss_type == 'regression_mse' or args.loss_type == 'regression_ce':
         train_datast = RankerDistillDataset(args.dataset, tokenizer, args.max_len)
 
