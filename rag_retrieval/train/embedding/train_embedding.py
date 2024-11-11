@@ -175,8 +175,6 @@ def main():
     accelerator.print(f'Start training for {args.epochs} epochs')
     trainer.train()
 
-    accelerator.wait_for_everyone()
-
     accelerator.print('Training finished')
     accelerator.print('Saving model')
     save_dir = args.output_dir + '/model'
