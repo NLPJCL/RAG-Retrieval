@@ -23,9 +23,9 @@
 </h4>
 
 RAG-Retrieval 提供了全链路的RAG检索微调(train)和推理(infer)以及蒸馏(distill)代码。
-- 对于微调，**支持微调任意开源的RAG检索模型**，包括向量（embedding、图a）、迟交互式模型（colbert、图d）、交互式模型（cross encoder(bert)、图c, llm-based reranker）。
-- 对于推理，RAG-Retrieval专注于排序(reranker)，开发了一个轻量级的python库[rag-retrieval](https://pypi.org/project/rag-retrieval/),**提供统一的方式调用任意不同的RAG排序模型**。
-- 对于蒸馏，支持将基于LLM的reranker模型，蒸馏到基于bert的reranker模型中。
+- 对于微调，**支持微调任意开源的RAG检索模型**，包括向量（embedding、图a）、迟交互式模型（colbert、图d）、重排序模型（cross encoder(bert)、图c, llm-based reranker）。
+- 对于推理，RAG-Retrieval专注于重排序(reranker)，开发了一个轻量级的python库[rag-retrieval](https://pypi.org/project/rag-retrieval/),**提供统一的方式调用任意不同的RAG排序模型**。
+- 对于蒸馏，支持将基于LLM的reranker模型蒸馏到基于bert的reranker模型中。
 
 
 ![ColBERT](pictures/models.png)
