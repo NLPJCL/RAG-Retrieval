@@ -94,9 +94,7 @@ pip install rag-retrieval
 
 对于LLM Reranker，rag_retrieval的Reranker支持多种强大的LLM排序模型。也支持使用任意的LLM的chat模型来进行zero shot排序。举例如下。
 
-- **bge系列的LLM Reranker模型，例如(BAAI/bge-reranker-v2-gemma, BAAI/bge-reranker-v2-minicpm-layerwise, BAAI/bge-reranker-v2-m3 )**
-
-- **也支持使用任意LLM的chat模型来进行zero shot排序**
+- **bge系列的LLM Reranker模型，例如(BAAI/bge-reranker-v2-gemma, BAAI/bge-reranker-v2-minicpm-layerwise )**
 
 ## 使用
 
