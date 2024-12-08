@@ -42,7 +42,8 @@ class EmbeddingDataset(Dataset):
         with open(train_data_path) as f:
             for line in tqdm.tqdm(f):
                 data_dic = json.loads(line.strip())
-
+                if "prompt_for_query" in data_dic and data_dic["prompt_for_query"]:
+                    data_dic['query'] = data_dic["prompt_for_query"] + data_dic['query']
                 if 'pos' in data_dic and 'neg' not in data_dic:
                     for i, text_pos in enumerate(data_dic['pos']):
                         temp_dic = {}

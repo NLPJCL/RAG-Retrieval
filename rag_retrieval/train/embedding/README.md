@@ -15,20 +15,21 @@ pip install -r requirements.txt
 
 对于向量模型，支持以下三种数据进行微调：
 
-- query和正例doc，此时负例为batch内随机负例。
+- query和正例doc，此时负例为batch内随机负例（即其它query的正例doc作为负例）。
 ```
-{"query": str, "pos": List[str]}
+{"query": str, "pos": List[str], "prompt_for_query"(optional): str}
 ```
-- query和正例doc和难负例doc。此时负例为query对应的难负例，以及batch内随机负例,可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.jsonl)文件。
+- query和正例doc和难负例doc。此时负例为query对应的难负例，以及batch内随机负例（即其它query的负例doc作为负例）,可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.jsonl)文件。
 ```
-{"query": str, "pos": List[str], "neg":List[str]}
+{"query": str, "pos": List[str], "neg":List[str], "prompt_for_query"(optional): str}
 ```
 - query和doc，以及query和每个doc的监督分数。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/lmsft_100.jsonl)文件。监督信号的构建推荐两种方式：
   - 人工标注：类似[STS任务](https://huggingface.co/datasets/PhilipMay/stsb_multi_mt)，给query和每个文档根据相似度打分。
   - LLM标注：参考论文[Atlas](https://www.jmlr.org/papers/v24/23-0037.html) ，使用LLM的困惑度，或Encoder-Decoder架构Transformer的FiD分数。
 ```
-{"query": str, "pos": List[str], "scores":List[float]}
+{"query": str, "pos": List[str], "scores":List[float], "prompt_for_query"(optional): str}
 ```
+注："prompt_for_query" 可用于将指令信息融入到 query 中，例如"Instruct: 给定一个用户问题, 检索出对回答问题有帮助的文档片段\nQuery: "。
 # 训练
 
 执行bash train_embedding.sh即可，下面是train_embedding.sh执行的代码。
