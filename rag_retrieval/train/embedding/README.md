@@ -1,39 +1,42 @@
-
-# 安装环境
+[English](./README.md) | [中文](./README_zh.md)
+# Setting Up the Environment
 ```bash
 conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
-#为了避免自动安装的torch与本地的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
+# To avoid compatibility issues between automatically installed torch and local CUDA,
+# it is recommended to manually install torch compatible with your local CUDA version before proceeding to the next step.
 pip install -r requirements.txt 
 ```
 
-# 微调模型
-在安装好依赖后，我们通过具体的示例来展示如何利用我们自己的数据来微调开源的向量模型。
+# Fine-tuning the Model
+After installing the dependencies, we will demonstrate how to fine-tune an open-source embedding model using our own data through specific examples.
 
-# 数据格式
+# Data Format
 
-和bge类似，训练数据是一个jsonl文件，文件中每一行如下面的示例所示。其中pos是一组正例doc的文本，neg是一组负例doc的文本。
+Similar to bge models, the training data is a jsonl file, with each line formatted as shown below. Here, `pos` is a list of positive document texts, and `neg` is a list of negative document texts.
 
-对于向量模型，支持以下三种数据进行微调：
+For embedding models, the following three types of data are supported for fine-tuning:
 
-- query和正例doc，此时负例为batch内随机负例（即其它query的正例doc作为负例）。
+- Query and positive documents, where negative examples are randomly sampled from other queries' positive documents within the batch.
 ```
 {"query": str, "pos": List[str], "prompt_for_query"(optional): str}
 ```
-- query和正例doc和难负例doc。此时负例为query对应的难负例，以及batch内随机负例（即其它query的负例doc作为负例）,可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.jsonl)文件。
+- Query, positive documents, and hard negative documents. Here, negative examples include both the hard negatives specific to the query and random negatives from other queries' negative documents. Refer to the [example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.jsonl) file.
 ```
 {"query": str, "pos": List[str], "neg":List[str], "prompt_for_query"(optional): str}
 ```
-- query和doc，以及query和每个doc的监督分数。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/lmsft_100.jsonl)文件。监督信号的构建推荐两种方式：
-  - 人工标注：类似[STS任务](https://huggingface.co/datasets/PhilipMay/stsb_multi_mt)，给query和每个文档根据相似度打分。
-  - LLM标注：参考论文[Atlas](https://www.jmlr.org/papers/v24/23-0037.html) ，使用LLM的困惑度，或Encoder-Decoder架构Transformer的FiD分数。
+- Query and documents, along with supervised scores for each query-document pair. Refer to the [example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/lmsft.jsonl) file. Supervised signals can be constructed in two recommended ways:
+  - Manual annotation: Similar to the [STS task](https://huggingface.co/datasets/PhilipMay/stsb_multi_mt), scoring each query-document pair based on their similarity.
+  - LLM annotation: Following the paper [Atlas](https://www.jmlr.org/papers/v24/23-0037.html), using the perplexity of an LLM or the FiD score of an Encoder-Decoder Transformer architecture.
 ```
 {"query": str, "pos": List[str], "scores":List[float], "prompt_for_query"(optional): str}
 ```
-注："prompt_for_query" 可用于将指令信息融入到 query 中，例如"Instruct: 给定一个用户问题, 检索出对回答问题有帮助的文档片段\nQuery: "。
-# 训练
+Note: `prompt_for_query` can be used to incorporate instructional information into the query, e.g., "Instruct: Given a user query, retrieve documents helpful for answering the query\nQuery: ".
 
-执行bash train_embedding.sh即可，下面是train_embedding.sh执行的代码。
+# Training
 
+Run the `train_embedding.sh` script to start training. Below is the code of `train_embedding.sh`.
+
+#For BERT-like models, using fsdp (ddp)
 ```bash
 CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
 --model_name_or_path "BAAI/bge-base-zh-v1.5" \
@@ -51,53 +54,73 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../confi
 --query_max_len 128 \
 --passage_max_len 512 \
  >./logs/t2ranking_100_example.log &
-
 ```
 
-**参数解释**
-- model_name_or_path:开源的embedding模型的名称或下载下来的服务器位置.（只要其支持sentence-transformers来进行推理，就可以来进行微调。）
-- save_on_epoch_end:是否每个epoch都将模型存储下来。
-- log_with：可视化工具，如果不设置用默认参数,也不会报错。
-- neg_nums：训练过程中难负例的数量，其不应该超过训练数据集中真实负例neg:List[str]的个数，如果neg_nums大于真实的负例的个数，那么就会对真实负例进行重采样，再随机选取neg_nums个负例。如果neg_nums小于真实负例的个数，那么在训练过程中会随机选择neg_nums个。(如果只有query和正例doc，可忽略该参数)
-- batch_size :越大batch内随机负例越多，效果越好。实际的负例个数为，(1+batch_size*neg_nums)
-- lr :学习率，一般1e-5到5e-5之间。
+#For LLM-like models, using deepspeed (zero1-3)
 
+Note: Generally, to achieve better training results, appropriate `prompt_for_query` should be set in the training data.
+```bash
+CUDA_VISIBLE_DEVICES="0,1,2,3"   nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_embedding.py  \
+--model_name_or_path "Alibaba-NLP/gte-Qwen2-7B-instruct" \
+--dataset "../../../example_data/t2rank_100.jsonl" \
+--output_dir "./output/t2ranking_100_example" \
+--batch_size 4 \
+--lr 2e-5 \
+--epochs 2 \
+--save_on_epoch_end 1 \
+--gradient_accumulation_steps 24  \
+--log_with 'wandb' \
+--warmup_proportion 0.05 \
+--neg_nums 15 \
+--temperature 0.02 \
+--query_max_len 256 \
+--passage_max_len 1024 \
+ >./logs/t2ranking_100_example.log &
+```
 
-默认使用fsdp来支持多卡训练模型，以下是配置文件的示例
-- [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml)。如果要在chinese-roberta-wwm-ext的基础上从零开始训练的排序，采用该配置文件。
-- [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml),如果要在bge-m3-embedding和bce-embedding-base_v1的基础上进行微调，采用该配置文件，因为两者在多语言的xlmroberta的基础上训练而来。
+**Parameter Explanation**
+- `model_name_or_path`: The name of the open-source embedding model or the local path where it has been downloaded. (As long as the model supports fine-tuning with the [sentence-transformers](https://www.sbert.net/) library, it can be used in our framework.)
+- `save_on_epoch_end`: Whether to save the model at the end of each epoch.
+- `log_with`: Visualization tool. If not set, default parameters will be used without errors.
+- `neg_nums`: Number of hard negative examples during training. It should not exceed the number of real negative examples (`neg:List[str]`) in the training dataset. If `neg_nums` is greater than the number of real negatives, real negatives will be resampled, and `neg_nums` negatives will be randomly selected. If `neg_nums` is less than the number of real negatives, `neg_nums` negatives will be randomly chosen during training. (Ignore this parameter if only query and positive documents are available.)
+- `batch_size`: Larger batch sizes result in more random negatives within the batch, improving performance. The actual number of negatives is `batch_size * neg_nums`.
+- `lr`: Learning rate, typically between 1e-5 and 5e-5.
 
-多卡训练配置文件修改:
-- 修改train_embedding.sh的CUDA_VISIBLE_DEVICES="0"为你想要设置的多卡。
-- 修改上述提到的配置文件的num_processes为你想要跑的卡的数量。
+For BERT-like models, fsdp is used by default to support multi-GPU training. Here are example configuration files:
+- [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml). Use this configuration file for training a embedding model from scratch based on `chinese-roberta-wwm-ext`.
+- [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml). Use this configuration file for fine-tuning based on `bge-m3-embedding` and `bce-embedding-base_v1`, as they are trained on the multilingual `xlmroberta`.
 
-# 加载模型进行预测
+For LLM-like models, deepspeed is used by default to support multi-GPU training. Here is an example configuration file:
+- [deepspeed_zero2](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/deepspeed/deepspeed_zero2.yaml)
 
-对于保存的模型，会按照sentence-transformers的格式去保存，因此你可以很容易加载模型来进行预测。
+Modifying the multi-GPU training configuration:
+- Change `CUDA_VISIBLE_DEVICES="0"` in `train_embedding.sh` to the desired multi-GPU setting.
+- Modify the `num_processes` in the aforementioned configuration files to the number of GPUs you want to use.
 
-在model.py里，我们给了一个示例如何加载以及预测。
+# Loading the Model for Prediction
 
+The saved model will be saved in the sentence-transformers format, allowing for easy loading and prediction.
+
+In `model.py`, an example is provided on how to load and use the model for prediction.
 
 ```python
-cuda_device='cuda:0'
-ckpt_path = '保存模型的路径'
+cuda_device = 'cuda:0'
+ckpt_path = 'path_to_saved_model'
 embedding = Embedding.from_pretrained(
     ckpt_path,
 )
 embedding.to(cuda_device)
-input_lst = ['我喜欢中国','我爱爬泰山']
-embeddings = embedding.encode(input_lst,device=cuda_device)
-
+input_lst = ['I love China', 'I love climbing Mount Tai']
+embeddings = embedding.encode(input_lst, device=cuda_device)
 ```
 
-同时，也支持使用sentence-transformers库来进行推理。
+Additionally, the `sentence-transformers` library can be used for inference.
 ```python
 from sentence_transformers import SentenceTransformer
 
-ckpt_path = '保存模型的路径'
-input_lst = ['我喜欢中国','我爱爬泰山']
+ckpt_path = 'path_to_saved_model'
+input_lst = ['I love China', 'I love climbing Mount Tai']
 
 model = SentenceTransformer(ckpt_path)
 embeddings = model.encode(input_lst)
-
 ```
