@@ -287,11 +287,11 @@ def test_model_embedding():
     
     input_lst = ['我喜欢中国']
 
-    embedding = embedding.encode(input_lst, device=cuda_device, prompt="Instruct: 给定一个用户查询, 检索与查询相关的文档\nQuery: ")
+    embedding = embedding.encode(input_lst, device=cuda_device, prompt="Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: ")
     # embedding = embedding.encode(input_lst, device=cuda_device)
 
     print(len(embedding.tolist()))
-    print(embedding.tolist()[0][:100])
+    print(embedding.tolist()[0])
 
 
 if __name__ == "__main__":
