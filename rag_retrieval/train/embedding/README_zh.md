@@ -11,7 +11,7 @@ pip install -r requirements.txt
 
 # 数据格式
 
-和bge类似，训练数据是一个jsonl文件，文件中每一行如下面的示例所示。其中pos是一组正例doc的文本，neg是一组负例doc的文本。
+和bge类似，训练数据是一个jsonl文件，文件中每一行如下面的示例所示。其中`pos`是一组正例doc的文本，`neg`是一组负例doc的文本,`prompt_for_query`是某些向量模型需要在query前面添加的prompt。（可选的）。
 
 对于向量模型，支持以下三种数据进行微调：
 
@@ -56,7 +56,6 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../confi
 
 #llm类模型,deepspeed(zero1-3)
 
-注意：一般来说，为了达到更好的训练效果，此时训练数据中应当设置合适的"prompt_for_query"。
 ```bash
 CUDA_VISIBLE_DEVICES="0,1,2,3"   nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_embedding.py  \
 --model_name_or_path "Alibaba-NLP/gte-Qwen2-7B-instruct" \
