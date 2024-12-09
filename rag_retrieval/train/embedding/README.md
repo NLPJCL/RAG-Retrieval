@@ -12,7 +12,7 @@ After installing the dependencies, we will demonstrate how to fine-tune an open-
 
 # Data Format
 
-Similar to bge models, the training data is a jsonl file, with each line formatted as shown below. Here, `pos` is a list of positive document texts, and `neg` is a list of negative document texts.
+Similar to bge models, the training data is a jsonl file, with each line formatted as shown below. Here, `pos` is a list of positive document texts, and `neg` is a list of negative document texts,`prompt_for_query` is a prompt that some embedding models need to add before the query. (optional)
 
 For embedding models, the following three types of data are supported for fine-tuning:
 
@@ -58,7 +58,6 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../confi
 
 #For LLM-like models, using deepspeed (zero1-3)
 
-Note: Generally, to achieve better training results, appropriate `prompt_for_query` should be set in the training data.
 ```bash
 CUDA_VISIBLE_DEVICES="0,1,2,3"   nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_embedding.py  \
 --model_name_or_path "Alibaba-NLP/gte-Qwen2-7B-instruct" \
