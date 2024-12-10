@@ -23,11 +23,13 @@ class EmbeddingDataset(Dataset):
 
         self.neg_nums = neg_nums
         self.train_data = self.read_train_data(train_data_path)
-        if len(self.train_data[0].keys()) == 2:
+        train_data_keys_num = len(self.train_data[0].keys())
+        train_data_keys_num = train_data_keys_num - 1 if 'prompt_for_query' in self.train_data[0] else train_data_keys_num
+        if train_data_keys_num == 2:
             self.data_type = 'pair'
-        elif len(self.train_data[0].keys()) == 3 and 'neg' in self.train_data[0]:
+        elif train_data_keys_num == 3 and 'neg' in self.train_data[0]:
             self.data_type = 'triplet'
-        elif len(self.train_data[0].keys()) == 3 and 'score' in self.train_data[0]:
+        elif train_data_keys_num == 3 and 'score' in self.train_data[0]:
             self.data_type = 'pair_score'
         self.tokenizer = tokenizer
         self.data_type_2_collate_fn = {
@@ -42,7 +44,8 @@ class EmbeddingDataset(Dataset):
         with open(train_data_path) as f:
             for line in tqdm.tqdm(f):
                 data_dic = json.loads(line.strip())
-
+                if "prompt_for_query" in data_dic and data_dic["prompt_for_query"]:
+                    data_dic['query'] = data_dic["prompt_for_query"] + data_dic['query']
                 if 'pos' in data_dic and 'neg' not in data_dic:
                     for i, text_pos in enumerate(data_dic['pos']):
                         temp_dic = {}

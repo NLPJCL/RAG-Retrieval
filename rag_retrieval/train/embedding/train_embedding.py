@@ -114,8 +114,6 @@ def main():
         mrl_dims=mrl_dims
     )
 
-    model = accelerator.prepare(model)
-
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
 
     train_datast = EmbeddingDataset(
@@ -155,7 +153,7 @@ def main():
     else:
         lr_scheduler = None
 
-    optimizer, lr_scheduler, train_dataloader = accelerator.prepare(optimizer, lr_scheduler, train_dataloader)
+    model, optimizer, lr_scheduler,train_dataloader = accelerator.prepare(model, optimizer, lr_scheduler,train_dataloader)
 
     accelerator.wait_for_everyone()
 
@@ -180,7 +178,7 @@ def main():
     save_dir = args.output_dir + '/model'
 
     unwrapped_model = accelerator.unwrap_model(model)
-    unwrapped_model.save_pretrained(save_dir)
+    unwrapped_model.save_pretrained(save_dir, safe_serialization=True)
     tokenizer.save_pretrained(save_dir)
 
 

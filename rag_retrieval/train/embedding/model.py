@@ -156,6 +156,10 @@ class Embedding(nn.Module):
         scores,
     ):
         loss_fct = nn.KLDivLoss(reduction="batchmean")
+        
+        # normalization
+        query_embeddings = F.normalize(query_embeddings, p=2, dim=-1)
+        pos_doc_embeddings = F.normalize(pos_doc_embeddings, p=2, dim=-1)
 
         query_embeddings = F.normalize(query_embeddings, p=2, dim=-1)
         pos_doc_embeddings = F.normalize(pos_doc_embeddings, p=2, dim=-1)
@@ -180,17 +184,18 @@ class Embedding(nn.Module):
         device='cpu',
         max_len=512,
         batch_size=512,
+        prompt=""
     ):
         self.device = device
         self.to(self.device)
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sen) for sen in sentences])
-        sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
+        sentences_sorted = [prompt + sentences[idx] for idx in length_sorted_idx]
 
         for start_index in trange(0, len(sentences), batch_size, desc="Batches"):
             sentences_batch = sentences_sorted[start_index:start_index + batch_size]
 
-            input_ids, token_type_ids, attention_mask = self.preprocess(sentences_batch, max_len)
+            input_ids, attention_mask = self.preprocess(sentences_batch, max_len)
 
             embeddings = self.forward(input_ids, attention_mask)
             embeddings = embeddings['query_embeddings'].detach().cpu()
@@ -215,10 +220,9 @@ class Embedding(nn.Module):
         tokens = self.tokenizer(sentences, return_tensors="pt", padding="max_length", truncation=True, max_length=max_len)
 
         input_ids = tokens["input_ids"].to(self.device)
-        token_type_ids = tokens['token_type_ids'].to(self.device)
         attention_mask = tokens['attention_mask'].to(self.device)
 
-        return input_ids, token_type_ids, attention_mask
+        return input_ids, attention_mask
 
     def _text_length(self, text):
         """
@@ -238,10 +242,11 @@ class Embedding(nn.Module):
 
     def save_pretrained(
         self,
-        save_dir
+        save_dir,
+        safe_serialization = False
     ):
 
-        self.model.save(save_dir, safe_serialization=False)
+        self.model.save(save_dir, safe_serialization)
 
     @classmethod
     def from_pretrained(
@@ -251,7 +256,7 @@ class Embedding(nn.Module):
         mrl_dims=[],
         temperature=0.02,
     ):
-        sentence_model = SentenceTransformer(model_name_or_path)
+        sentence_model = SentenceTransformer(model_name_or_path, trust_remote_code=True)
 
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 
@@ -281,16 +286,16 @@ class Embedding(nn.Module):
 def test_model_embedding():
     cuda_device = 'cuda:0'
     ckpt_path = ''
-    embedding = Embedding.from_pretrained(
-        ckpt_path,
-    )
-
+    embedding = Embedding.from_pretrained(ckpt_path)
     embedding.to(cuda_device)
+    
     input_lst = ['我喜欢中国']
 
-    embedding = embedding.encode(input_lst, device=cuda_device)
+    embedding = embedding.encode(input_lst, device=cuda_device, prompt="Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: ")
+    # embedding = embedding.encode(input_lst, device=cuda_device)
 
-    print(embedding.tolist())
+    print(len(embedding.tolist()))
+    print(embedding.tolist()[0])
 
 
 if __name__ == "__main__":
