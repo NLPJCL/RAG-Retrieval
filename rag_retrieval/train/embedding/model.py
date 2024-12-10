@@ -239,10 +239,11 @@ class Embedding(nn.Module):
 
     def save_pretrained(
         self,
-        save_dir
+        save_dir,
+        safe_serialization = False
     ):
 
-        self.model.save(save_dir, safe_serialization=False)
+        self.model.save(save_dir, safe_serialization)
 
     @classmethod
     def from_pretrained(
