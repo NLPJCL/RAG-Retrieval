@@ -104,7 +104,7 @@ RAG-Retrieval has developed a lightweight Python library, [rag-retrieval](https:
 
 Among them, rag-retrieval-reranker is the result of training on the hfl/chinese-roberta-wwm-ext model using the RAG-Retrieval code, and the training data uses the training data of the bge-rerank model.
 
-## colbert模型在 MTEB Reranking 任务的结果
+## Results of the Colbert model in the MTEB Reranking task
 
 |      **Model**  | **Model Size(GB)**  | **Dim**  | **T2Reranking** | **MMarcoReranking** | **CMedQAv1** | **CMedQAv2** | **Avg** |
 |:-----------: |:----------:|:----------:|:----------:|:-------------:|:--------------:|:---------------:| :---------------:|
@@ -113,7 +113,7 @@ Among them, rag-retrieval-reranker is the result of training on the hfl/chinese-
 
 Among them, rag-retrieval-colbert is the result of training on the hfl/chinese-roberta-wwm-ext model using the RAG-Retrieval code, and the training data uses the training data of the bge-rerank model.
 
-## 用领域内数据微调开源的BGE系列模型
+## Fine-tune the open source BGE series models with domain data
 
 |      **Model**  | **T2ranking**  | |
 |:-----------: |:----------:|:----------:|
