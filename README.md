@@ -76,9 +76,9 @@ cd ./rag_retrieval/train/embedding
 bash train_embedding.sh
 ```
 
-## Prediction
+## inference
 
-RAG-Retrieval has developed a lightweight Python library, [rag-retrieval](https://pypi.org/project/rag-retrieval/), which provides a unified interface for calling various RAG ranking models with the following features:
+RAG-Retrieval has developed a lightweight Python library, [rag-retrieval](https://pypi.org/project/rag-retrieval/), which provides a unified interface for calling various RAG reranker models with the following features:
 
 - Supports multiple ranking models: Compatible with common open-source ranking models (Cross Encoder Reranker, Decoder-Only LLM Reranker).
 
