@@ -17,7 +17,7 @@
 [English](./README.md) | [中文](./README_zh.md)
 
 The RAG-Retrieval offers end-to-end code for training, inference, and distillation of the RAG retrieval model.
-- For fine-tuning, **RAG-Retrieval supports fine-tuning of any open-source RAG retrieval model**, including embedding models (Figure a,bert-based, llm-based), late interactive models (Figure d,colbert), and reranker models (Figure c,bert-based, llm-based).
+- For training, **RAG-Retrieval supports fine-tuning of any open-source RAG retrieval model**, including embedding models (Figure a,bert-based, llm-based), late interactive models (Figure d,colbert), and reranker models (Figure c,bert-based, llm-based).
 - For inference, RAG-Retrieval focuses reranker and has developed a lightweight Python library [rag-retrieval](https://pypi.org/project/rag-retrieval/), **which provides a unified way to call any different RAG ranking models.**
 - For distillation, it supports distilling LLM-based reranker models into bert-based reranker models.
 
