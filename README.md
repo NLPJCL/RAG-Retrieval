@@ -49,7 +49,7 @@ The RAG-Retrieval offers end-to-end code for training, inference, and distillati
 - **Supports distillation of llm-based large models to bert-based smaller models**: Currently supports the distillation of llm-based reranker models into bert-based reranker models (implementation of mean squared error and cross-entropy loss).
 - **Advanced Algorithms**: For embedding models, supports the [MRL algorithm](https://arxiv.org/abs/2205.13147) to reduce the dimensionality of output vectors.
 - **Multi-gpu training strategy**: Includes deepspeed, fsdp.
-- **Simple and Elegant**: Rejects complex encapsulations, with a simple and understandable code structure for easy modifications.
+- **Simple yet Elegant**: Rejects complex, with a simple and understandable code structure for easy modifications.
 
 
 # Quick Start
