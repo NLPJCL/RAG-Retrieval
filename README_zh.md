@@ -46,7 +46,7 @@ RAG-Retrieval 提供了全链路的RAG检索模型微调(train)和推理(infer)�
 - **支持微调任意开源的RAG检索模型**: 支持大部分开源的embedding和reranker模型，例如：bge(bge-embedding,bge-m3,bge-reranker),bce(bce-embedding,bce-reranker),gte(gte-embedding,gte-multilingual-reranker-base)。
 - **支持蒸馏llm-based大模型到bert-based小模型**: 目前已经支持llm-based reranker模型蒸馏到bert-based reranker模型。(均方差和交叉熵loss实现)
 - **先进算法**: 对于embedding模型，支持[MRL算法](https://arxiv.org/abs/2205.13147)，来缩减输出向量的维度。
-- **多卡训练策略**: deepspeed,fsdp,gradient accumulation,
+- **多卡训练策略**: deepspeed,fsdp.
 - **简单且优雅**: 拒绝复杂的封装，简单易懂的代码结构，方便魔改。
 
 # 快速开始
