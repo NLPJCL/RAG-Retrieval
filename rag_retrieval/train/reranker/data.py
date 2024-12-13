@@ -21,7 +21,7 @@ class RankerDataset(Dataset):
 
     def read_train_data(self, train_data_path):
         # standard input data type:
-        # {"query": str(required), "pos": List[str](required), "neg":List[str](optional), "pos_scores": List[int](optional), "neg_scores": List[int](optional)}}   
+        # {"query": str(required), "pos": List[str](required), "neg":List[str](optional), "pos_scores": List(optional), "neg_scores": List(optional)}}   
         
         train_data = []
         label_distribution = defaultdict(int)

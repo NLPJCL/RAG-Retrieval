@@ -57,8 +57,8 @@ CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config
 # bert model, fsdp(ddp), distill(distill_llama_to_bert) loss_type "point_mse" or "point_ce"
  CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_reranker.py  \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
---train_dataset "../../../example_data/t2rank_100_distill_standard.jsonl" \
---val_dataset "../../../example_data/t2rank_100_distill_standard.jsonl" \
+--train_dataset "../../../example_data/t2rank_100_distill.jsonl" \
+--val_dataset "../../../example_data/t2rank_100_distill.jsonl" \
 --output_dir "./output/t2ranking_100_example_distill" \
 --model_type "SeqClassificationRanker" \
 --loss_type "point_mse" \
