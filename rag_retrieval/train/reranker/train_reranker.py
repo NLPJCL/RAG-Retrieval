@@ -14,7 +14,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import torch
 from accelerate.utils import set_seed, ProjectConfiguration
-from modeling import SequenceClassifier
+from modeling import SeqClassificationRanker
 from transformers import get_cosine_schedule_with_warmup
 from data import RankerDataset
 from torch.utils.data import DataLoader
@@ -105,7 +105,7 @@ def parse_args():
         "--model_type",
         type=str,
         required=True,
-        help="choose from [SeqClassifier]",
+        help="choose from [SeqClassificationRanker]",
     )
     parser.add_argument("--train_dataset", help="training file", required=True)
     parser.add_argument("--val_dataset", help="validation file", default=None)
@@ -122,8 +122,8 @@ def parse_args():
     parser.add_argument(
         "--loss_type",
         type=str,
-        default="classfication",
-        help="chose from [classfication, regression_mse, regression_ce]",
+        default="point_ce",
+        help="chose from [point_ce, point_mse]",
     )
     parser.add_argument(
         "--log_with", type=str, default="wandb", help="wandb, tensorboard"
@@ -160,20 +160,18 @@ def main():
     )
 
     accelerator.init_trackers("ranker", config=vars(args))
-    accelerator.print(f"Train Args from User Input ]: {vars(args)}")
+    accelerator.print(f"Train Args from User Input: {vars(args)}")
 
-    assert args.model_type == "SeqClassifier"
-    model = SequenceClassifier.from_pretrained(
-        model_name_or_path=args.model_name_or_path,
-        loss_type=args.loss_type,
-        num_labels=args.num_labels,
-        query_format="query: {}",
-        document_format="document: {}",
-        seq=" ",
-        special_token="<score>"
-    )
-
-    if args.loss_type == "classfication":
+    if args.model_type == "SeqClassificationRanker":
+        model = SeqClassificationRanker.from_pretrained(
+            model_name_or_path=args.model_name_or_path,
+            loss_type=args.loss_type,
+            num_labels=args.num_labels,
+            query_format="query: {}",
+            document_format="document: {}",
+            seq=" ",
+            special_token="<score>"
+        )
         train_dataset = RankerDataset(
             args.train_dataset,
             target_model=model,
@@ -185,8 +183,9 @@ def main():
                 target_model=model,
                 max_len=args.max_len
             )
-    elif args.loss_type == "regression_mse" or args.loss_type == "regression_ce":
-        raise Exception("暂未实现")
+    else:
+        raise ValueError("暂未支持其他模型类型")
+
 
     num_workers = 10
     train_dataloader = DataLoader(

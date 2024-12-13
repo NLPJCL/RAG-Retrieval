@@ -4,13 +4,13 @@ from torch.nn import MSELoss, BCEWithLogitsLoss
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 
-class SequenceClassifier(nn.Module):
+class SeqClassificationRanker(nn.Module):
     def __init__(
         self,
         hf_model=None,
         tokenizer=None,
         cuda_device="cpu",
-        loss_type="classfication",
+        loss_type="point_ce",
         query_format="{}",
         document_format="{}",
         seq=" ",
@@ -33,14 +33,11 @@ class SequenceClassifier(nn.Module):
 
         if labels is not None:
             logits = output.logits
-            if self.loss_type == "regression_mse":
+            if self.loss_type == "point_mse":
                 logits = torch.sigmoid(logits)
                 loss_fct = MSELoss()
                 loss = loss_fct(logits.squeeze(), labels.squeeze())
-            elif self.loss_type == "regression_ce":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(logits.squeeze(), labels.squeeze())
-            elif self.loss_type == "classfication":
+            elif self.loss_type == "point_ce":
                 loss_fct = BCEWithLogitsLoss()
                 loss = loss_fct(logits.squeeze(), labels.squeeze())
             output.loss = loss
@@ -102,7 +99,7 @@ class SequenceClassifier(nn.Module):
     def from_pretrained(
         cls,
         model_name_or_path,
-        loss_type="classfication",
+        loss_type="point_ce",
         num_labels=1,
         cuda_device="cpu",
         query_format="{}",
@@ -154,11 +151,11 @@ class SequenceClassifier(nn.Module):
 def test_relecance():
     ckpt_path = ""
     device = "cuda:0"
-    reranker = SequenceClassifier.from_pretrained(
+    reranker = SeqClassificationRanker.from_pretrained(
         model_name_or_path=ckpt_path, 
         num_labels=1, # binary classification
         cuda_device="cuda:0",
-        loss_type="classfication",
+        loss_type="point_ce",
         # query_format="query: {}",
         # document_format="document: {}",
         # seq=" ",

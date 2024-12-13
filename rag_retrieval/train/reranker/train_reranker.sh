@@ -10,14 +10,14 @@ if [ ! -d "./logs" ]; then
     echo "mkdir logs"
 fi
 
-# bert model,fsdp(ddp) loss_type "classfication"
+# bert model,fsdp(ddp) loss_type "point_ce"
 CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_reranker.py  \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
 --train_dataset "../../../example_data/t2rank_100.jsonl" \
 --val_dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \
---model_type "SeqClassifier" \
---loss_type "classfication" \
+--model_type "SeqClassificationRanker" \
+--loss_type "point_ce" \
 --batch_size 32 \
 --lr 5e-5 \
 --epochs 2 \
@@ -32,14 +32,14 @@ CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config
  >./logs/t2ranking_100_example.log &
 
 
-# llm model, deepspeed(zero1-2, not for zero3) loss_type "classfication"
+# llm model, deepspeed(zero1-2, not for zero3) loss_type "point_ce"
  CUDA_VISIBLE_DEVICES="4,5,6,7"  nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_reranker.py  \
 --model_name_or_path "Qwen/Qwen2.5-1.5B" \
 --train_dataset "../../../example_data/t2rank_100.jsonl" \
 --val_dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example_llm_decoder" \
---model_type "SeqClassifier" \
---loss_type "classfication" \
+--model_type "SeqClassificationRanker" \
+--loss_type "point_ce" \
 --batch_size 8 \
 --lr 5e-5 \
 --epochs 2 \
@@ -54,14 +54,14 @@ CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config
  >./logs/t2ranking_100_example_llm_decoder.log &
 
 
-# bert model, fsdp(ddp), distill(distill_llama_to_bert) loss_type "regression_mse" or "regression_ce"
+# bert model, fsdp(ddp), distill(distill_llama_to_bert) loss_type "point_mse" or "point_ce"
  CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_reranker.py  \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
---train_dataset "../../../example_data/t2rank_100.jsonl" \
---val_dataset "../../../example_data/t2rank_100.jsonl" \
+--train_dataset "../../../example_data/t2rank_100_distill_standard.jsonl" \
+--val_dataset "../../../example_data/t2rank_100_distill_standard.jsonl" \
 --output_dir "./output/t2ranking_100_example_distill" \
---model_type "SeqClassifier" \
---loss_type "regression_mse" \
+--model_type "SeqClassificationRanker" \
+--loss_type "point_mse" \
 --batch_size 32 \
 --lr 5e-5 \
 --epochs 2 \
