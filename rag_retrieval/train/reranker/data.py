@@ -2,33 +2,21 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import tqdm
 import json
-
-def map_label_to_continuous(label, min_label, max_label):
-    """
-    Maps a discrete label in the range [min_label, max_label] to a continuous value in [0, 1].
-
-    Args:
-        label (int): The discrete label to be mapped.
-        min_label (int): The minimum value of the discrete label range.
-        max_label (int): The maximum value of the discrete label range.
-
-    Returns:
-        float: A continuous value in the range [0, 1].
-    """
-    if label < min_label or label > max_label:
-        raise ValueError("Label is out of range.")
-
-    return (label - min_label) / (max_label - min_label)
+from collections import defaultdict
+from utils import map_label_to_continuous, visualize_label_distribution, shuffle_text
 
 
 class RankerDataset(Dataset):
-    def __init__(self, train_data_path, target_model, max_len=512, max_label=1, min_label=0):
+    def __init__(self, train_data_path, target_model, max_len=512, max_label=1, min_label=0, shuffle_rate=0.0):
         self.model = target_model
         self.max_len = max_len
         assert max_label > min_label and min_label >= 0
         self.max_label = max_label
         self.min_label = min_label
         self.map_func = lambda x: map_label_to_continuous(x, self.min_label, self.max_label)
+        assert 0 <= shuffle_rate <= 1 , "shuffle rate must be between 0 and 1"
+        self.shuffle_rate = shuffle_rate # The probability of shuffling the text
+        
         self.train_data = self.read_train_data(train_data_path)
 
     def read_train_data(self, train_data_path):
@@ -36,6 +24,7 @@ class RankerDataset(Dataset):
         # {"query": str(required), "pos": List[str](required), "neg":List[str](optional), "pos_scores": List[int](optional), "neg_scores": List[int](optional)}}   
         
         train_data = []
+        label_distribution = defaultdict(int)
         with open(train_data_path) as f:
             for line in tqdm.tqdm(f):
                 data_dic = json.loads(line.strip())
@@ -52,16 +41,25 @@ class RankerDataset(Dataset):
                         pos_score = 1
                         if "pos_scores" in data_dic:
                             pos_score = self.map_func(data_dic["pos_scores"][idx])
+                        label_distribution[f"{pos_score:.2f}"] += 1
+                        if self.shuffle_rate > 0:
+                            text_pos = shuffle_text(text_pos, self.shuffle_rate)
                         train_data.append([data_dic["query"], text_pos, pos_score])
                 if "neg" in data_dic:
                     for idx, text_neg in enumerate(data_dic["neg"]):
                         neg_score = 0
                         if "neg_scores" in data_dic:
                             neg_score = self.map_func(data_dic["neg_scores"][idx])
+                        label_distribution[f"{neg_score:.2f}"] += 1
+                        if self.shuffle_rate > 0:
+                            text_neg = shuffle_text(text_neg, self.shuffle_rate)
                         train_data.append([data_dic["query"], text_neg, neg_score])
 
+        # only visualize the label distribution on the main process
+        if torch.distributed.get_rank() == 0:
+            visualize_label_distribution(label_distribution)
+            
         # standard output data type: [query, doc, score[0,1]]
-        print(f"Loaded {len(train_data)} data")
         return train_data
 
     def __len__(self):
