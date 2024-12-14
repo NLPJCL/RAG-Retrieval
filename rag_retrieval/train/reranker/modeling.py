@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.nn import MSELoss, BCEWithLogitsLoss
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import tqdm
 
 
 class SeqClassificationRanker(nn.Module):
@@ -13,7 +14,7 @@ class SeqClassificationRanker(nn.Module):
         loss_type="point_ce",
         query_format="{}",
         document_format="{}",
-        seq=" ",
+        seq="",
         special_token="",
     ):
         super().__init__()
@@ -46,43 +47,44 @@ class SeqClassificationRanker(nn.Module):
 
     @torch.no_grad()
     def compute_score(
-        self,
-        sentences_pairs,
-        batch_size=256,
-        max_length=512,
-        normalize=False
+        self, sentences_pairs, batch_size=256, max_length=512, normalize=False
     ):
         """
         sentences_pairs=[[query,title],[query1,title1],...]
         """
 
         all_logits = []
-        for start_index in range(0, len(sentences_pairs), batch_size):
+        for start_index in tqdm.tqdm(range(0, len(sentences_pairs), batch_size)):
             sentences_batch = sentences_pairs[start_index : start_index + batch_size]
-            batch_data = self.preprocess(sentences_batch, max_length).to(self.model.device)
+            batch_data = self.preprocess(sentences_batch, max_length).to(
+                self.model.device
+            )
             output = self.forward(batch_data)
             logits = output.logits.detach().cpu()
             all_logits.extend(logits)
 
         if normalize:
             all_logits = torch.sigmoid(torch.tensor(all_logits)).detach().cpu().tolist()
-            
+
         return all_logits
 
     def preprocess(self, sentences_pairs, max_len):
         temp = []
-        for pair in sentences_pairs:
-            new_query = self.query_format.format(pair[0].strip()) + self.seq
-            document_max_len = (
+        for query, document in sentences_pairs:
+            new_query = self.query_format.format(query.strip()) + self.seq
+            document_max_length = (
                 max_len
                 - len(self.tokenizer.encode(new_query))
                 - len(self.tokenizer.encode(self.special_token))
             )
-            new_document = self.tokenizer.decode(
-                self.tokenizer.encode(self.document_format.format(pair[1].strip()))[
-                    :document_max_len
-                ]) + self.special_token
-            temp.append([new_query, new_document])
+            document_invalid_ids = self.tokenizer.encode(
+                self.document_format.format(document.strip()),
+                max_length=document_max_length,
+                truncation=True,
+                add_special_tokens=False,
+            )
+            new_document = self.tokenizer.decode(document_invalid_ids)
+            temp.append([new_query, new_document + self.special_token])
         assert len(temp) == len(sentences_pairs)
         sentences_pairs = temp
 
@@ -104,11 +106,11 @@ class SeqClassificationRanker(nn.Module):
         cuda_device="cpu",
         query_format="{}",
         document_format="{}",
-        seq="\n",
-        special_token=""
+        seq="",
+        special_token="",
     ):
         hf_model = AutoModelForSequenceClassification.from_pretrained(
-            model_name_or_path, num_labels=num_labels
+            model_name_or_path, num_labels=num_labels, trust_remote_code=True
         ).to(cuda_device)
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 
@@ -129,7 +131,7 @@ class SeqClassificationRanker(nn.Module):
             query_format,
             document_format,
             seq,
-            special_token
+            special_token,
         )
         return reranker
 
@@ -148,21 +150,19 @@ class SeqClassificationRanker(nn.Module):
         )
 
 
-def test_relecance():
-    ckpt_path = ""
-    device = "cuda:0"
+def test_SeqClassificationRanker():
+    ckpt_path = "/data_train/search/zengziyang/models/Qwen/Qwen2.5-7B-Instruct-mlp-1024"
     reranker = SeqClassificationRanker.from_pretrained(
-        model_name_or_path=ckpt_path, 
-        num_labels=1, # binary classification
+        model_name_or_path=ckpt_path,
+        num_labels=1,  # binary classification
         cuda_device="cuda:0",
         loss_type="point_ce",
-        # query_format="query: {}",
-        # document_format="document: {}",
-        # seq=" ",
-        # special_token="<score>"
+        query_format="query: {}",
+        document_format="document: {}",
+        seq=" ",
+        special_token="<score>"
     )
     reranker.eval()
-    reranker.model.to(device)
 
     input_lst = [
         ["我喜欢中国", "我喜欢中国"],
@@ -181,4 +181,4 @@ def test_relecance():
 
 
 if __name__ == "__main__":
-    test_relecance()
+    test_SeqClassificationRanker()
