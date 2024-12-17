@@ -24,7 +24,7 @@ from accelerate import Accelerator
 
 def create_adamw_optimizer(
     model,
-    lr,
+    lr: float,
     weight_decay=1e-2,
     no_decay_keywords=("bias", "LayerNorm", "layernorm"),
     special_lr_groups=None,  # 额外的学习率分组
@@ -95,21 +95,20 @@ def create_adamw_optimizer(
 
 
 def parse_args():
+    import yaml
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model_name_or_path", default="hfl/chinese-roberta-wwm-ext", required=True
-    )
+    parser.add_argument("--config", type=str)
+    parser.add_argument("--model_name_or_path", default="hfl/chinese-roberta-wwm-ext")
     parser.add_argument(
         "--model_type",
         type=str,
-        required=True,
         help="choose from [SeqClassificationRanker]",
     )
-    parser.add_argument("--train_dataset", help="training file", required=True)
+    parser.add_argument("--train_dataset", help="training file")
     parser.add_argument("--val_dataset", help="validation file", default=None)
-    parser.add_argument("--output_dir", help="output dir", required=True)
+    parser.add_argument("--output_dir", help="output dir", default="./output")
     parser.add_argument("--save_on_epoch_end", type=int, default=0)
     parser.add_argument("--num_max_checkpoints", type=int, default=5)
     parser.add_argument("--max_len", type=int, default=512)
@@ -134,8 +133,23 @@ def parse_args():
     # 所以删除 deepspeed config 文件中的 gradient_accumulation_steps 配置
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
     parser.add_argument("--num_labels", type=int, default=1, help="mlp dim")
+    parser.add_argument("--query_format", type=str, default="{}")
+    parser.add_argument("--document_format", type=str, default="{}")
+    parser.add_argument("--seq", type=str, default="")
+    parser.add_argument("--special_token", type=str, default="")
+    parser.add_argument("--max_label", type=int, default=1)
+    parser.add_argument("--min_label", type=int, default=0)
 
     args = parser.parse_args()
+
+    # 加载 YAML 配置文件
+    with open(args.config, "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file)
+
+    # 使用 YAML 配置文件中的参数覆盖命令行参数
+    for key, value in config.items():
+        setattr(args, key, value)
+
     return args
 
 
@@ -167,25 +181,30 @@ def main():
             model_name_or_path=args.model_name_or_path,
             loss_type=args.loss_type,
             num_labels=args.num_labels,
-            query_format="query: {}",
-            document_format="document: {}",
-            seq=" ",
-            special_token="<score>"
+            query_format=args.query_format,
+            document_format=args.document_format,
+            seq=args.seq,
+            special_token=args.special_token,
         )
         train_dataset = RankerDataset(
             args.train_dataset,
             target_model=model,
-            max_len=args.max_len
+            max_len=args.max_len,
+            max_label=args.max_label,
+            min_label=args.min_label,
+            tag="training",
         )
         if args.val_dataset:
             val_dataset = RankerDataset(
                 args.val_dataset,
                 target_model=model,
-                max_len=args.max_len
+                max_len=args.max_len,
+                max_label=args.max_label,
+                min_label=args.min_label,
+                tag="validation",
             )
     else:
         raise ValueError("暂未支持其他模型类型")
-
 
     num_workers = 10
     train_dataloader = DataLoader(
@@ -214,7 +233,7 @@ def main():
     ]
 
     optimizer = create_adamw_optimizer(
-        model, lr=args.lr, special_lr_groups=special_lr_groups
+        model, lr=float(args.lr), special_lr_groups=special_lr_groups
     )
 
     assert 0 <= args.warmup_proportion < 1
@@ -245,7 +264,7 @@ def main():
         epochs=args.epochs,
         lr_scheduler=lr_scheduler,
         log_interval=args.log_interval * accelerator.gradient_state.num_steps,
-        save_on_epoch_end=args.save_on_epoch_end
+        save_on_epoch_end=args.save_on_epoch_end,
     )
 
     accelerator.print(f"Start training for {args.epochs} epochs ...")

@@ -4,115 +4,135 @@
 
 ```bash
 conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
-# To avoid compatibility issues between automatically installed torch and local CUDA, it is recommended to manually install torch compatible with your local CUDA version before proceeding to the next step.
+# To avoid compatibility issues between automatically installed torch and local CUDA, it is recommended to manually install a torch version compatible with your local CUDA before proceeding to the next step.
 pip install -r requirements.txt 
 ```
 
+| Requirement | Recommend |
+|---------------|-----------------|
+| accelerate    | 1.0.1           |
+| deepspeed     | 0.15.4          |
+| transformers  | 4.44.2          |
+
 # Fine-tuning the Model
 
-After installing the dependencies, we will demonstrate how to fine-tune an open-source ranking model (BAAI/bge-reranker-v2-m3) using our own data, or train a ranking model from scratch using BERT-like models (hfl/chinese-roberta-wwm-ext) and LLM-like models (Qwen/Qwen2.5-1.5B). Additionally, we support distilling the ranking capabilities of LLM-like models into smaller BERT models.
+After installing the dependencies, we will demonstrate how to fine-tune the open-source ranking model (BAAI/bge-reranker-v2-m3) using our own data, or train a ranking model from scratch using BERT-like models (hfl/chinese-roberta-wwm-ext) and LLM-like models (Qwen/Qwen2.5-1.5B). Additionally, we support distilling the ranking capabilities of LLM-like models into smaller BERT models.
 
 # Data Format
 
-For the ranking model, we support the following data format: Each line in the JSONL file is a dictionary string representing the distribution of positive and negative documents under a specific query.
+For ranking models, we support the following standard data format:
 ```
-{"query": str (required), "pos": List[str] (required), 
-"neg":List[str](optional), 
-"pos_scores": List(optional), "neg_scores": List(optional)}
+{"query": str (required), "pos": List[str] (required), "neg": List[str] (optional), "pos_scores": List (optional), "neg_scores": List (optional)}
 ```
-- For binary classification data, where labels are either 0 or 1, refer to the [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) file. During training, we use `Binary Cross Entropy loss` for optimization. We pair the query with positive examples (label=1) and the query with negative examples (label=0). In this case, "pos_scores" and "neg_scores" are not required. Therefore, during prediction, the final prediction score is the output logit of the model after applying sigmoid, ranging between 0 and 1.
-- For multi-class classification data, where labels can be 0, 1, 2, ..., users can specify the maximum and minimum label values when setting up the dataset. The dataset will automatically scale the discrete label levels to the 0-1 score range. For example, label 0: 0, label 1: 0.5, label 2: 1.
-- For continuous score data, such as scores from stronger model distillation, ranging from 0 to 1, refer to the [t2rank_100_distill.jsonl](../../../example_data/t2rank_100_distill.jsonl) file. For this type of data, we use `Binary Cross Entropy loss` or `Mean Squared Error (MSE) loss` for optimization under the context of soft labels. Code for scoring using LLM for distillation can be found in the examples/distill_llm_to_bert directory.
+Each line in a JSONL file is a dictionary string containing all documents for a single query.
+
+Users can simplify their datasets to the following format:
+```
+{"query": str, "pos": List[str], "neg": List[str]}
+```
+- For binary classification labels (0 or 1), refer to the [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) file. During training, we use Binary Cross Entropy loss for optimization. By default, pairs of query and positive examples are assigned a score of 1, and pairs of query and negative examples are assigned a score of 0. During prediction, the final model output is a sigmoid-transformed logit, ranging from 0 to 1.
+```
+{"query": str, "pos": List[str], "pos_scores": List[int|float]}
+```
+- Users can also directly use `pos` and `pos_scores` to construct the dataset.
+- **Multi-level Labels**: If the relevance `pos_scores` in the annotated data are multi-level labels (e.g., labels can be 0, 1, 2, etc.), users can specify the maximum and minimum labels when creating the dataset. The discrete labels will be automatically scaled to the 0-1 score range. For example, if there are three levels of labels, they will be mapped as follows: label 0: 0, label 1: 0.5, label 2: 1.
+- **Knowledge Distillation**: If the relevance `pos_scores` in the annotated data are continuous scores in the range of 0-1, indicating knowledge distillation, refer to the [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) file. For such data, we use Binary Cross Entropy loss or Mean Squared Error (MSE) loss for optimization during training. Code for scoring and annotating using LLM can be found in the [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) directory, and code for converting distillation data format can be found in [distill_data_transfer.py](../../../example_data/distill_data_transfer.py).
 
 # Training
 
-Run `bash train_reranker.sh` to start training. Below is the code executed by `train_reranker.sh`.
-
-#BERT-like model, fsdp(ddp)
+## Training BERT-like Models, fsdp(ddp)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config/xlmroberta_default_config.yaml train_reranker.py  \
---model_name_or_path "BAAI/bge-reranker-v2-m3" \
---train_dataset "../../../example_data/t2rank_100.jsonl" \
---val_dataset "../../../example_data/t2rank_100.jsonl" \
---output_dir "./output/t2ranking_100_example" \
---model_type "SeqClassificationRanker" \
---loss_type "point_ce" \
---batch_size 32 \
---lr 5e-5 \
---epochs 2 \
---num_labels 1 \
---log_with  'wandb' \
---save_on_epoch_end 1 \
---warmup_proportion 0.1 \
---gradient_accumulation_steps 3 \
---max_len 512 \
---gradient_accumulation_steps 4 \
---mixed_precision "bf16" \
- >./logs/t2ranking_100_example.log &
+CUDA_VISIBLE_DEVICES="0,1" accelerate launch \
+--config_file ../../../config/xlmroberta_default_config.yaml \
+train_reranker.py \
+--config config/training_bert.yaml
 ```
 
-#LLM model, deepspeed(zero1-2, not for zero3)
+## Distilling BERT-like Models, fsdp(ddp)
+
 ```bash
-CUDA_VISIBLE_DEVICES="4,5,6,7"  nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_reranker.py  \
---model_name_or_path "Qwen/Qwen2.5-1.5B" \
---train_dataset "../../../example_data/t2rank_100.jsonl" \
---val_dataset "../../../example_data/t2rank_100.jsonl" \
---output_dir "./output/t2ranking_100_example_llm_decoder" \
---model_type "SeqClassificationRanker" \
---loss_type "point_ce" \
---batch_size 8 \
---lr 5e-5 \
---epochs 2 \
---num_labels 1 \
---log_with 'wandb' \
---save_on_epoch_end 1 \
---warmup_proportion 0.1 \
---gradient_accumulation_steps 3 \
---max_len 512 \
---gradient_accumulation_steps 8 \
---mixed_precision "bf16" \
- >./logs/t2ranking_100_example_llm_decoder.log &
+CUDA_VISIBLE_DEVICES="0,1" accelerate launch \
+--config_file ../../../config/xlmroberta_default_config.yaml \
+train_reranker.py \
+--config config/distilling_bert.yaml
+```
+
+## Training LLM Models, deepspeed(zero1-2, not for zero3)
+
+```bash
+CUDA_VISIBLE_DEVICES="0,1,2,3" accelerate launch \
+--config_file ../../../config/deepspeed/deepspeed_zero1.yaml \
+train_reranker.py \
+--config config/training_llm.yaml
 ```
 
 **Parameter Explanation**
-- `model_name_or_path`: The name of the open-source reranker model or the local server path where it is downloaded. Examples: BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1. You can also train from scratch, such as BERT: hfl/chinese-roberta-wwm-ext and LLM: Qwen/Qwen2.5-1.5B.
-- `loss_type`: Choose between `point_ce` (Cross Entropy loss) and `point_mse` (Mean Squared Error loss).
-- `model_type`: Currently supports SeqClassificationRanker.
-- `save_on_epoch_end`: Whether to save the model at the end of each epoch.
-- `log_with`: Visualization tool. If not set, default parameters will be used without errors.
-- `batch_size`: Number of query-doc pairs in each batch.
+
+Model-related:
+- `model_name_or_path`: The name of the open-source reranker model or the local server location where it is downloaded. Examples: BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1. Training from scratch is also possible, such as using BERT: hfl/chinese-roberta-wwm-ext and LLM: Qwen/Qwen2.5-1.5B.
+- `model_type`: Currently supports SeqClassificationRanker (models that can be loaded with AutoModelForSequenceClassification).
+- `max_len`: The maximum input length supported by the model.
+
+Dataset-related:
+- `train_dataset`: The training dataset, format as described above.
+- `val_dataset`: The validation dataset, same format as the training dataset.
+- `max_label`: The maximum label in the dataset, default is 1.
+- `min_label`: The minimum label in the dataset, default is 0.
+
+Training-related:
+- `output_dir`: Directory for saving checkpoints and the final model during training.
+- `loss_type`: Choose from point_ce (cross-entropy loss) and point_mse (mean squared error loss).
+- `epoch`: Number of epochs to train the model on the dataset.
 - `lr`: Learning rate, typically between 1e-5 and 5e-5.
+- `batch_size`: Number of query-doc pairs in each batch.
+- `seed`: Set a consistent seed for reproducibility of experimental results.
+- `warmup_proportion`: Proportion of warmup steps to total model update steps. If set to 0, no warmup is performed, and cosine decay is applied directly from the set `lr`.
+- `gradient_accumulation_steps`: Number of gradient accumulation steps. The actual batch size is `batch_size` * `gradient_accumulation_steps` * `num_of_GPUs`.
+- `mixed_precision`: Whether to use mixed precision training to reduce GPU memory requirements. Mixed precision training optimizes memory usage by using low precision for computations and high precision for parameter updates. bf16 (Brain Floating Point 16) can effectively reduce anomalies in loss scaling but is only supported by some hardware.
+- `save_on_epoch_end`: Whether to save the model at the end of each epoch.
+- `num_max_checkpoints`: Controls the maximum number of checkpoints saved during a single training session.
+- `log_interval`: Log loss every x parameter updates.
+- `log_with`: Visualization tool, choose from wandb and tensorboard.
 
-For BERT-like models, fsdp is used by default to support multi-GPU training. Below are example configuration files:
-- [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml): Use this configuration file for training from scratch based on hfl/chinese-roberta-wwm-ext.
-- [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml): Use this configuration file for fine-tuning based on BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1, or BAAI/bge-reranker-v2-m3, as they are trained on the multilingual XLMRoberta.
+SeqClassificationRanker Model Parameters:
+- `num_labels`: Number of logits output by the model, corresponding to the number of classification categories.
+- For LLM used in discriminative ranking, the input format needs to be manually constructed, introducing the following parameters:
+  - `query_format`, e.g., "query: {}"
+  - `document_format`, e.g., "document: {}"
+  - `seq`: Separates the query and document parts, e.g., " "
+  - `special_token`: Indicates the end of the document content, prompting the model to start scoring. It can be any token, e.g., "\<score>"
+  - Overall format: "query: xxx document: xxx\<score>"
 
-For LLM-like models, it is recommended to use deepspeed to support multi-GPU training. Currently, only zero1 and zero2 training phases are supported. Below are example configuration files:
+For BERT-like models, fsdp is used by default to support multi-GPU training. Here are examples of configuration files:
+- [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml): Use this configuration file for training a ranking model from scratch based on hfl/chinese-roberta-wwm-ext.
+- [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml): Use this configuration file for fine-tuning based on BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1, or BAAI/bge-reranker-v2-m3, as they are all trained based on the multilingual XLMRoberta.
+
+For LLM-like models, it is recommended to use deepspeed to support multi-GPU training. Currently, only the training stages of zero1 and zero2 are supported. Below are examples of configuration files.
 - [deepspeed_zero1](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/deepspeed/deepspeed_zero1.yaml)
 - [deepspeed_zero2](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/deepspeed/deepspeed_zero2.yaml)
 
-To modify the multi-GPU training configuration:
-- Change the `CUDA_VISIBLE_DEVICES="0"` in train_reranker.sh to the desired multi-GPU setup.
-- Modify the `num_processes` in the aforementioned configuration files to match the number of GPUs you want to use.
+Modifications for multi-GPU training configuration:
+- Change `CUDA_VISIBLE_DEVICES="0"` in the command
+- Modify the `num_processes` in the aforementioned configuration files to the number of GPUs you want to use.
 
 # Loading the Model for Prediction
 
-You can easily load a saved model for prediction. An example is provided in `modeling.py`.
+For saved models, you can easily load them for prediction. An example is provided in `modeling.py`.
 
-Noteably, to address special cases for discriminative ranking in Large Language Models (LLMs) like "Qwen/Qwen2.5-1.5B", specific formats are designed, effectively resulting in: "query: {xxx} document: {xxx}\<score>". Experiments show that the introduction of `special_token` significantly enhances LLM ranking performance. 
+To accommodate special cases of LLMs, such as "Qwen/Qwen2.5-1.5B," for discriminative ranking, a relevant format has been designed. The practical effect is: "query: {xxx} document: {xxx}<score>". Experiments show that the introduction of `special_token` significantly enhances the ranking performance of LLMs.
 
 ```python
 ckpt_path = "maidalun1020/bce-reranker-base_v1" 
 device = "cuda:0"
 reranker = SeqClassificationRanker.from_pretrained(
     model_name_or_path=ckpt_path, 
-    num_labels=1, # for binary classification
+    num_labels=1, # binary classification
     cuda_device="cuda:0",
     loss_type="point_ce",
     query_format="{}",
     document_format="{}",
-    seq="\n",
+    seq="",
     special_token=""
 )
 # query_format="query: {}",
@@ -125,10 +145,10 @@ reranker.model.to(device)
 
 input_lst = [
     ["I love China", "I love China"],
-    ["I love the United States", "I don't like the United States at all"],
+    ["I love the USA", "I don't like the USA at all"],
     [
         "How long does it take to climb Mount Tai?",
-        "It takes 1-8 hours to climb Mount Tai, depending on individual physical fitness. Professional climbers may only need a little over an hour to reach the summit, while those with lower physical fitness may take over 5 hours.",
+        "It takes 1-8 hours to climb Mount Tai, depending on individual physical fitness. Professional climbers may only need an hour or so to reach the summit, while those with lower physical fitness may take over 5 hours.",
     ],
 ]
 

@@ -7,7 +7,7 @@ from utils import map_label_to_continuous, visualize_label_distribution, shuffle
 
 
 class RankerDataset(Dataset):
-    def __init__(self, train_data_path, target_model, max_len=512, max_label=1, min_label=0, shuffle_rate=0.0):
+    def __init__(self, train_data_path, target_model, max_len=512, max_label=1, min_label=0, shuffle_rate=0.0, tag="train"):
         self.model = target_model
         self.max_len = max_len
         assert max_label > min_label and min_label >= 0
@@ -16,7 +16,7 @@ class RankerDataset(Dataset):
         self.map_func = lambda x: map_label_to_continuous(x, self.min_label, self.max_label)
         assert 0 <= shuffle_rate <= 1 , "shuffle rate must be between 0 and 1"
         self.shuffle_rate = shuffle_rate # The probability of shuffling the text
-        
+        self.tag = tag
         self.train_data = self.read_train_data(train_data_path)
 
     def read_train_data(self, train_data_path):
@@ -57,6 +57,7 @@ class RankerDataset(Dataset):
 
         # only visualize the label distribution on the main process
         if torch.distributed.get_rank() == 0:
+            print(f"----- {self.tag} data -----")
             visualize_label_distribution(label_distribution)
             
         # standard output data type: [query, doc, score[0,1]]
@@ -76,7 +77,11 @@ class RankerDataset(Dataset):
             all_batch_pairs.append([item[0], item[1]])
             all_labels.append(item[2])
 
+        # max_len 实际的作用由模型本身界定
         tokens = self.model.preprocess(all_batch_pairs, self.max_len)
+        if isinstance(tokens, tuple):
+            # LLM-based Ranker models may return a tuple consisting of tokenized ids and associated role messages.
+            tokens = tokens[0]
         label_batch = torch.tensor(all_labels, dtype=torch.float16)
 
         return tokens, label_batch

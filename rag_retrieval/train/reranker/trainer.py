@@ -43,6 +43,7 @@ class Trainer:
         self.log_interval = log_interval
         self.save_on_epoch_end = save_on_epoch_end
         self.tokenizer = tokenizer
+        self.min_val_loss = 99999
 
         self.train_loss_tracker = LossTracker()
         self.validation_loss_tracker = LossTracker()
@@ -92,19 +93,22 @@ class Trainer:
                     self.accelerator.log(
                         {"validation_loss": validation_loss}, step=self.current_step
                     )
-                    if self.accelerator.is_local_main_process and self.current_step > 0:
-                        save_dir = self.get_checkpoint_dir(current_epoch)
-                        save_dir = os.path.join(
-                            save_dir,
-                            f"_step_{self.current_step}_val_loss_{validation_loss:.3f}",
-                        )
-                        print(save_dir)
-                        unwrapped_model = self.accelerator.unwrap_model(self.model)
-                        unwrapped_model.save_pretrained(
-                            save_dir, safe_serialization=True
-                        )
-                        self.tokenizer.save_pretrained(save_dir)
-                    self.accelerator.wait_for_everyone()
+                    # If you want to save the model with min validation loss, uncomment the following code.
+                    # if validation_loss < self.min_val_loss:
+                    #     if self.accelerator.is_local_main_process and self.current_step > 0:
+                    #         save_dir = self.get_checkpoint_dir(current_epoch)
+                    #         save_dir = os.path.join(
+                    #             save_dir,
+                    #             f"_min_val_loss",
+                    #         )
+                    #         self.min_val_loss = validation_loss
+                    #         print(f"Saving model with min validation loss: {validation_loss}, step: {self.current_step}")
+                    #         unwrapped_model = self.accelerator.unwrap_model(self.model)
+                    #         unwrapped_model.save_pretrained(
+                    #             save_dir, safe_serialization=True
+                    #         )
+                    #         self.tokenizer.save_pretrained(save_dir)
+                    #     self.accelerator.wait_for_everyone()
 
                 self.progress_bar.update()
                 self.current_step += 1
