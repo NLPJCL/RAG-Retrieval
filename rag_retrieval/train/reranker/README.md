@@ -1,160 +1,160 @@
+[English](./README.md) | [中文](./README_zh.md)
 
+# Setting Up the Environment
 
-# 安装环境
 ```bash
 conda create -n rag-retrieval python=3.8 && conda activate rag-retrieval
-#为了避免自动安装的torch与本地的cuda不兼容，建议进行下一步之前先手动安装本地cuda版本兼容的torch。
+# To avoid compatibility issues between automatically installed torch and local CUDA, it is recommended to manually install a torch version compatible with your local CUDA before proceeding to the next step.
 pip install -r requirements.txt 
 ```
 
-# 微调模型
-在安装好依赖后，我们通过具体的示例来展示如何利用我们自己的数据来微调开源的排序模型。(bge-rerank-base(v1),bce-rerank-basev1),或者你可以从BERT类模型(chinese-roberta-wwm-ext),或者LLM类模型(Qwen/Qwen2.5-1.5B)开始从零训练自己的排序模型。你也可以将LLM类模型的reranker能力蒸馏到BERT中来。
+| Requirement | Recommend |
+|---------------|-----------------|
+| accelerate    | 1.0.1           |
+| deepspeed     | 0.15.4          |
+| transformers  | 4.44.2          |
 
-# 数据格式
+# Fine-tuning the Model
 
+After installing the dependencies, we will demonstrate how to fine-tune the open-source ranking model (BAAI/bge-reranker-v2-m3) using our own data, or train a ranking model from scratch using BERT-like models (hfl/chinese-roberta-wwm-ext) and LLM-like models (Qwen/Qwen2.5-1.5B). Additionally, we support distilling the ranking capabilities of LLM-like models into smaller BERT models.
 
-对于排序模型，支持以下两种数据进行微调：
+# Data Format
 
-- 标注数据的相关性为二分类数据：query和doc的关系只有正例和负例。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.jsonl)的jsonl文件。
+For ranking models, we support the following standard data format:
 ```
-{"query": str, "pos": List[str], "neg":List[str]}
+{"query": str (required), "pos": List[str] (required), "neg": List[str] (optional), "pos_scores": List (optional), "neg_scores": List (optional)}
 ```
-在训练中，我们采用二分类交叉熵(bce loss)来进行训练，会把queyr和正例组成pair，标签为1，query和负例组成pair，标签为0。因此在预测时，最终得到的score经过sigmoid后为0-1之间的值。
-- 蒸馏数据：query和doc,以及对应的score。可以参考[example_data](https://github.com/NLPJCL/RAG-Retrieval/blob/master/example_data/t2rank_100.distill.jsonl)的jsonl文件。
+Each line in a JSONL file is a dictionary string containing all documents for a single query.
+
+Users can simplify their datasets to the following format:
 ```
-{"query": str, "content": str, "score":str(float)}
+{"query": str, "pos": List[str], "neg": List[str]}
 ```
-对于该种数据，在训练中，我们支持mse和交叉熵loss来进行训练。我们在examples/distill_llm_to_bert目录下可以找到转换llm(生成)为蒸馏数据的脚本。
-
-
-
-# 训练
-执行bash train_reranker.sh即可，下面是train_reranker.sh执行的代码。
-
-#bert类模型,fsdp(ddp)
-```bash
- CUDA_VISIBLE_DEVICES="4,5,6,7"  nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_reranker.py \
---model_name_or_path "hfl/chinese-roberta-wwm-ext" \
---dataset "../../../example_data/t2rank_100.jsonl" \
---output_dir "./output/t2ranking_100_example" \
---model_type "cross_encoder" \
---loss_type "classfication" \
---batch_size 32 \
---lr 5e-5 \
---epochs 2 \
---num_labels 1 \
---log_with  'wandb' \
---save_on_epoch_end 1 \
---warmup_proportion 0.1 \
---gradient_accumulation_steps 1 \
---max_len 512 \
- >./logs/t2ranking_100_example.log &
+- For binary classification labels (0 or 1), refer to the [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) file. During training, we use Binary Cross Entropy loss for optimization. By default, pairs of query and positive examples are assigned a score of 1, and pairs of query and negative examples are assigned a score of 0. During prediction, the final model output is a sigmoid-transformed logit, ranging from 0 to 1.
 ```
-
-#llm类模型,deepspeed(zero1-3)
-```bash
-CUDA_VISIBLE_DEVICES="4,5,6,7"  nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_reranker.py  \
---model_name_or_path "Qwen/Qwen2.5-1.5B" \
---dataset "../../../example_data/t2rank_100.jsonl" \
---output_dir "./output/t2ranking_100_example_llm_decoder" \
---model_type "llm_decoder" \
---loss_type "classfication" \
---mixed_precision 'bf16' \
---batch_size 32 \
---lr 5e-5 \
---epochs 2 \
---num_labels 1 \
---log_with  'wandb' \
---save_on_epoch_end 1 \
---warmup_proportion 0.1 \
---gradient_accumulation_steps 3 \
---max_len 512 \
- >./logs/t2ranking_100_example_llm_decoder.log &
+{"query": str, "pos": List[str], "pos_scores": List[int|float]}
 ```
+- Users can also directly use `pos` and `pos_scores` to construct the dataset.
+- **Multi-level Labels**: If the relevance `pos_scores` in the annotated data are multi-level labels (e.g., labels can be 0, 1, 2, etc.), users can specify the maximum and minimum labels when creating the dataset. The discrete labels will be automatically scaled to the 0-1 score range. For example, if there are three levels of labels, they will be mapped as follows: label 0: 0, label 1: 0.5, label 2: 1.
+- **Knowledge Distillation**: If the relevance `pos_scores` in the annotated data are continuous scores in the range of 0-1, indicating knowledge distillation, refer to the [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) file. For such data, we use Binary Cross Entropy loss or Mean Squared Error (MSE) loss for optimization during training. Code for scoring and annotating using LLM can be found in the [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) directory, and code for converting distillation data format can be found in [distill_data_transfer.py](../../../example_data/distill_data_transfer.py).
 
-#bert类模型,fsdp(ddp),distill(distill_llama_to_bert)
+# Training
+
+## Training BERT-like Models, fsdp(ddp)
 
 ```bash
- CUDA_VISIBLE_DEVICES="0"  nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_reranker.py  \
---model_name_or_path "hfl/chinese-roberta-wwm-ext" \
---dataset "../../../example_data/t2rank_100.distill.jsonl" \
---output_dir "./output/t2ranking_100_example_distill" \
---model_type "cross_encoder" \
---loss_type "regression_mse" \
---batch_size 32 \
---lr 5e-5 \
---epochs 2 \
---num_labels 1 \
---log_with  'wandb' \
---save_on_epoch_end 1 \
---warmup_proportion 0.1 \
---gradient_accumulation_steps 3 \
---max_len 512 \
- >./logs/t2ranking_100_example_distill.log &
+CUDA_VISIBLE_DEVICES="0,1" accelerate launch \
+--config_file ../../../config/xlmroberta_default_config.yaml \
+train_reranker.py \
+--config config/training_bert.yaml
 ```
 
-**参数解释**
-- model_name_or_path:开源的embedding模型的名称或下载下来的服务器位置.（可以是：BAAI/bge-reranker-base,maidalun1020/bce-reranker-base_v1，也可以从普通的bert类模型开始训练，例如hfl/chinese-roberta-wwm-ext）
-- loss_type：可以在classfication以及regression_mse和regression_ce中选择。其中classfication是第一种数据格式，采用bce loss训练。regression_mse和regression_ce是第二种数据格式，分别采用mse loss和bce loss来建模成回归任务。
-- model_type: 可以在cross_encoder以及llm_decoder中选择。
-- save_on_epoch_end:是否每个epoch都将模型存储下来。
-- log_with：可视化工具，如果不设置用默认参数,也不会报错。
-- batch_size :每个batch query-doc的piar对的数量。
-- lr :学习率，一般1e-5到5e-5之间。
+## Distilling BERT-like Models, fsdp(ddp)
 
-对于bert类模型，默认使用fsdp来支持多卡训练模型，以下是配置文件的示例.
-- [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml), 如果要在chinese-roberta-wwm-ext的基础上从零开始训练的排序，采用该配置文件。
-- [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml), 如果要在bge-reranker-base和bce-reranker-base_v1的基础上进行微调，采用该配置文件，因为两者在多语言的xlmroberta的基础上训练而来。
+```bash
+CUDA_VISIBLE_DEVICES="0,1" accelerate launch \
+--config_file ../../../config/xlmroberta_default_config.yaml \
+train_reranker.py \
+--config config/distilling_bert.yaml
+```
 
+## Training LLM Models, deepspeed(zero1-2, not for zero3)
 
-对于llm类模型，默认使用deepspeed来支持多卡训练模型，以下是配置文件的实例。
+```bash
+CUDA_VISIBLE_DEVICES="0,1,2,3" accelerate launch \
+--config_file ../../../config/deepspeed/deepspeed_zero1.yaml \
+train_reranker.py \
+--config config/training_llm.yaml
+```
+
+**Parameter Explanation**
+
+Model-related:
+- `model_name_or_path`: The name of the open-source reranker model or the local server location where it is downloaded. Examples: BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1. Training from scratch is also possible, such as using BERT: hfl/chinese-roberta-wwm-ext and LLM: Qwen/Qwen2.5-1.5B.
+- `model_type`: Currently supports SeqClassificationRanker (models that can be loaded with AutoModelForSequenceClassification).
+- `max_len`: The maximum input length supported by the model.
+
+Dataset-related:
+- `train_dataset`: The training dataset, format as described above.
+- `val_dataset`: The validation dataset, same format as the training dataset.
+- `max_label`: The maximum label in the dataset, default is 1.
+- `min_label`: The minimum label in the dataset, default is 0.
+
+Training-related:
+- `output_dir`: Directory for saving checkpoints and the final model during training.
+- `loss_type`: Choose from point_ce (cross-entropy loss) and point_mse (mean squared error loss).
+- `epoch`: Number of epochs to train the model on the dataset.
+- `lr`: Learning rate, typically between 1e-5 and 5e-5.
+- `batch_size`: Number of query-doc pairs in each batch.
+- `seed`: Set a consistent seed for reproducibility of experimental results.
+- `warmup_proportion`: Proportion of warmup steps to total model update steps. If set to 0, no warmup is performed, and cosine decay is applied directly from the set `lr`.
+- `gradient_accumulation_steps`: Number of gradient accumulation steps. The actual batch size is `batch_size` * `gradient_accumulation_steps` * `num_of_GPUs`.
+- `mixed_precision`: Whether to use mixed precision training to reduce GPU memory requirements. Mixed precision training optimizes memory usage by using low precision for computations and high precision for parameter updates. bf16 (Brain Floating Point 16) can effectively reduce anomalies in loss scaling but is only supported by some hardware.
+- `save_on_epoch_end`: Whether to save the model at the end of each epoch.
+- `num_max_checkpoints`: Controls the maximum number of checkpoints saved during a single training session.
+- `log_interval`: Log loss every x parameter updates.
+- `log_with`: Visualization tool, choose from wandb and tensorboard.
+
+SeqClassificationRanker Model Parameters:
+- `num_labels`: Number of logits output by the model, corresponding to the number of classification categories.
+- For LLM used in discriminative ranking, the input format needs to be manually constructed, introducing the following parameters:
+  - `query_format`, e.g., "query: {}"
+  - `document_format`, e.g., "document: {}"
+  - `seq`: Separates the query and document parts, e.g., " "
+  - `special_token`: Indicates the end of the document content, prompting the model to start scoring. It can be any token, e.g., "\<score>"
+  - Overall format: "query: xxx document: xxx\<score>"
+
+For BERT-like models, fsdp is used by default to support multi-GPU training. Here are examples of configuration files:
+- [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml): Use this configuration file for training a ranking model from scratch based on hfl/chinese-roberta-wwm-ext.
+- [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml): Use this configuration file for fine-tuning based on BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1, or BAAI/bge-reranker-v2-m3, as they are all trained based on the multilingual XLMRoberta.
+
+For LLM-like models, it is recommended to use deepspeed to support multi-GPU training. Currently, only the training stages of zero1 and zero2 are supported. Below are examples of configuration files.
+- [deepspeed_zero1](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/deepspeed/deepspeed_zero1.yaml)
 - [deepspeed_zero2](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/deepspeed/deepspeed_zero2.yaml)
 
-多卡训练配置文件修改:
-- 修改train_reranker.sh的CUDA_VISIBLE_DEVICES="0"为你想要设置的多卡。
-- 修改上述提到的配置文件的num_processes为你想要跑的卡的数量。
+Modifications for multi-GPU training configuration:
+- Change `CUDA_VISIBLE_DEVICES="0"` in the command
+- Modify the `num_processes` in the aforementioned configuration files to the number of GPUs you want to use.
 
+# Loading the Model for Prediction
 
-# 加载模型进行预测
+For saved models, you can easily load them for prediction. An example is provided in `modeling.py`.
 
-对于保存的模型，你可以很容易加载模型来进行预测。在model_bert.py和model_llm.py里，我们分别给了一个示例如何加载以及预测。
-
-
-```python
-ckpt_path='maidalun1020/bce-reranker-base_v1'
-device = 'cuda:0'
-cross_encode=CrossEncoder.from_pretrained(ckpt_path,num_labels=1,cuda_device=device)
-cross_encode.eval()
-cross_encode.model.to(device)
-
-input_lst=[
-    ['我喜欢中国','我喜欢中国'],
-    ['我喜欢美国','我一点都不喜欢美国'],
-    ['泰山要多长时间爬上去','爬上泰山需要1-8个小时，具体的时间需要看个人的身体素质。专业登山运动员可能只需要1个多小时就可以登顶，有些身体素质比较低的，爬的慢的就需要5个多小时了。']]
-
-res=cross_encode.compute_score(input_lst)
-
-print(torch.sigmoid(res[0]))
-print(torch.sigmoid(res[1]))
-print(torch.sigmoid(res[2]))
-
-```
+To accommodate special cases of LLMs, such as "Qwen/Qwen2.5-1.5B," for discriminative ranking, a relevant format has been designed. The practical effect is: "query: {xxx} document: {xxx}<score>". Experiments show that the introduction of `special_token` significantly enhances the ranking performance of LLMs.
 
 ```python
-ckpt_path='Qwen/Qwen2.5-1.5B'
-device = 'cuda:0'
-llmreranker = LLMDecoder.from_pretrained(ckpt_path,num_labels=1,cuda_device=device)
-llmreranker.eval()
-llmreranker.model.to(device)
+ckpt_path = "maidalun1020/bce-reranker-base_v1" 
+device = "cuda:0"
+reranker = SeqClassificationRanker.from_pretrained(
+    model_name_or_path=ckpt_path, 
+    num_labels=1, # binary classification
+    cuda_device="cuda:0",
+    loss_type="point_ce",
+    query_format="{}",
+    document_format="{}",
+    seq="",
+    special_token=""
+)
+# query_format="query: {}",
+# document_format="document: {}",
+# seq=" ",
+# special_token="<score>"
 
-input_lst=[
-['鹦鹉吃自己的小鱼吗','关注养鱼老道,关注更多观赏鱼实践知识,让我们简单养水、轻松养鱼!看来是我错怪了这对迷你鹦鹉鱼,极有可能是我当天看错了,人家本来是不吃孩子的,被我误认为吃了孩子,所以硬生生的给人家分了家。'],
-['我喜欢美国','我一点都不喜欢美国'],
-['泰山要多长时间爬上去','爬上泰山需要1-8个小时，具体的时间需要看个人的身体素质。专业登山运动员可能只需要1个多小时就可以登顶，有些身体素质比较低的，爬的慢的就需要5个多小时了。'],
+reranker.eval()
+reranker.model.to(device)
+
+input_lst = [
+    ["I love China", "I love China"],
+    ["I love the USA", "I don't like the USA at all"],
+    [
+        "How long does it take to climb Mount Tai?",
+        "It takes 1-8 hours to climb Mount Tai, depending on individual physical fitness. Professional climbers may only need an hour or so to reach the summit, while those with lower physical fitness may take over 5 hours.",
+    ],
 ]
-res=llmreranker.compute_score(input_lst)
+
+res = reranker.compute_score(input_lst)
+
 print(torch.sigmoid(res[0]))
 print(torch.sigmoid(res[1]))
 print(torch.sigmoid(res[2]))
-
 ```

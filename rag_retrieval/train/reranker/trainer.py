@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 
@@ -19,7 +18,6 @@ except ImportError:
     from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
 
 
-
 class Trainer:
     def __init__(
         self,
@@ -30,11 +28,10 @@ class Trainer:
         accelerator: Accelerator,
         validation_dataloader: DataLoader | None = None,
         epochs: int = 3,
-        lr_scheduler: LRScheduler | None = None,
-        log_interval: int = 50,
+        lr_scheduler: LRScheduler,
+        log_interval: int = 10,
         save_on_epoch_end: bool = True,
         tokenizer,
-
     ):
         self.model = model
         self.optimizer = optimizer
@@ -46,6 +43,7 @@ class Trainer:
         self.log_interval = log_interval
         self.save_on_epoch_end = save_on_epoch_end
         self.tokenizer = tokenizer
+        self.min_val_loss = 99999
 
         self.train_loss_tracker = LossTracker()
         self.validation_loss_tracker = LossTracker()
@@ -53,7 +51,9 @@ class Trainer:
             num_steps_per_epoch = len(self.train_dataloader)
         else:
             num_steps_per_epoch = None
-        self.progress_bar = DistributedTqdmProgressBar(self.epochs, num_steps_per_epoch=num_steps_per_epoch)
+        self.progress_bar = DistributedTqdmProgressBar(
+            self.accelerator, self.epochs, num_steps_per_epoch=num_steps_per_epoch
+        )
         self.current_step = 0
 
     def train(self):
@@ -65,28 +65,54 @@ class Trainer:
                 with self.accelerator.accumulate(self.model):
                     self.optimizer.zero_grad()
 
-                    batch_output = self.model(batch[0],batch[1])
+                    batch_output = self.model(batch[0], batch[1])
                     loss = batch_output.loss
 
                     self.accelerator.backward(loss)
                     self.optimizer.step()
-                    if self.lr_scheduler is not None:
-                        self.lr_scheduler.step()
+
+                    self.lr_scheduler.step()
                     self.train_loss_tracker.update(loss)
+
+                if batch_index % self.log_interval == 0:
+                    training_log_dict = dict(training_loss=self.train_loss_tracker.loss)
+                    lr_list = self.lr_scheduler.get_lr()
+                    for group_id, lr in enumerate(lr_list, 0):
+                        training_log_dict[f"lr_group_{group_id}"] = lr
+                    self.log_metrics(training_log_dict, step=self.current_step)
+
+                if (
+                    self.validation_dataloader
+                    and batch_index % (self.log_interval * 30) == 0
+                ):
+                    validation_loss = evaluate(
+                        self.model,
+                        self.validation_dataloader,
+                        self.validation_loss_tracker,
+                    )
+                    self.accelerator.log(
+                        {"validation_loss": validation_loss}, step=self.current_step
+                    )
+                    # If you want to save the model with min validation loss, uncomment the following code.
+                    # if validation_loss < self.min_val_loss:
+                    #     if self.accelerator.is_local_main_process and self.current_step > 0:
+                    #         save_dir = self.get_checkpoint_dir(current_epoch)
+                    #         save_dir = os.path.join(
+                    #             save_dir,
+                    #             f"_min_val_loss",
+                    #         )
+                    #         self.min_val_loss = validation_loss
+                    #         print(f"Saving model with min validation loss: {validation_loss}, step: {self.current_step}")
+                    #         unwrapped_model = self.accelerator.unwrap_model(self.model)
+                    #         unwrapped_model.save_pretrained(
+                    #             save_dir, safe_serialization=True
+                    #         )
+                    #         self.tokenizer.save_pretrained(save_dir)
+                    #     self.accelerator.wait_for_everyone()
 
                 self.progress_bar.update()
                 self.current_step += 1
-                if batch_index % self.log_interval == 0:
-                    self.log_metrics(
-                        {
-                        'loss': self.train_loss_tracker.loss,
-                        'lr':float(self.lr_scheduler.get_lr()[0])
-                        },
-                        step=self.current_step,
-                    )
 
-            train_metrics = self.add_prefix({'loss': self.train_loss_tracker.loss}, 'train')
-            self.accelerator.log(train_metrics, step=current_epoch)
             self.train_loss_tracker.on_epoch_end()
             self.progress_bar.on_epoch_end()
 
@@ -96,16 +122,16 @@ class Trainer:
                     self.validation_dataloader,
                     self.validation_loss_tracker,
                 )
-                validation_metrics = self.add_prefix({'loss': validation_loss}, 'validation')
-                self.accelerator.print(f'Epoch {current_epoch} Validation loss: {validation_loss:.6f}')
-                self.accelerator.log(validation_metrics, step=current_epoch)
+                self.accelerator.print(
+                    f"Epoch {current_epoch} Validation loss: {validation_loss:.6f}"
+                )
 
             if self.save_on_epoch_end:
                 if self.accelerator.is_local_main_process:
-                    save_dir=self.get_checkpoint_dir(current_epoch)
+                    save_dir = self.get_checkpoint_dir(current_epoch)
                     print(save_dir)
                     unwrapped_model = self.accelerator.unwrap_model(self.model)
-                    unwrapped_model.save_pretrained(save_dir)
+                    unwrapped_model.save_pretrained(save_dir, safe_serialization=True)
                     self.tokenizer.save_pretrained(save_dir)
                 self.accelerator.wait_for_everyone()
 
@@ -117,27 +143,35 @@ class Trainer:
 
     @staticmethod
     def add_prefix(values: dict[str, Any], prefix: str):
-        return {f'{prefix}/{k}': v for k, v in values.items()}
+        return {f"{prefix}/{k}": v for k, v in values.items()}
 
     def get_checkpoint_dir(self, current_epoch):
-            
+
         self.accelerator.project_configuration.automatic_checkpoint_naming = False
-        output_dir = os.path.join(self.accelerator.project_dir, 'checkpoints')
+        output_dir = os.path.join(self.accelerator.project_dir, "checkpoints")
         if self.accelerator.is_local_main_process:
             os.makedirs(output_dir, exist_ok=True)
-            folders = [os.path.join(output_dir, folder) for folder in os.listdir(output_dir)]
+            folders = [
+                os.path.join(output_dir, folder) for folder in os.listdir(output_dir)
+            ]
             if self.accelerator.project_configuration.total_limit is not None and (
                 len(folders) + 1 > self.accelerator.project_configuration.total_limit
             ):
 
                 def _inner(folder):
-                    return list(map(int, re.findall(r'[\/]?([0-9]+)(?=[^\/]*$)', folder)))[0]
+                    return list(
+                        map(int, re.findall(r"[\/]?([0-9]+)(?=[^\/]*$)", folder))
+                    )[0]
 
                 folders.sort(key=_inner)
-                for folder in folders[: len(folders) + 1 - self.accelerator.project_configuration.total_limit]:
+                for folder in folders[
+                    : len(folders)
+                    + 1
+                    - self.accelerator.project_configuration.total_limit
+                ]:
                     shutil.rmtree(folder)
 
-        output_dir = os.path.join(output_dir, f'checkpoint_{current_epoch-1}')
+        output_dir = os.path.join(output_dir, f"checkpoint_{current_epoch-1}")
         if self.accelerator.is_local_main_process:
             os.makedirs(output_dir, exist_ok=True)
         return output_dir
@@ -148,11 +182,11 @@ def evaluate(
     dataloader: DataLoader,
     loss_tracker: LossTracker | None = None,
 ):
-    model = model.eval()
+    model.eval()
     loss_tracker = loss_tracker or LossTracker()
     for batch in dataloader:
         with torch.inference_mode():
-            batch_output = model(batch[0],batch[1])
+            batch_output = model(batch[0], batch[1])
             loss = batch_output.loss
             loss_tracker.update(loss)
     loss = loss_tracker.loss
@@ -172,8 +206,10 @@ class DummyProgressBar:
 
 
 class DistributedTqdmProgressBar:
-    def __init__(self, epochs: int, num_steps_per_epoch: int | None, **kwargs) -> None:
-        self.accelerator = Accelerator()
+    def __init__(
+        self, accelerator, epochs: int, num_steps_per_epoch: int | None, **kwargs
+    ) -> None:
+        self.accelerator = accelerator
         self.epochs = epochs
         self.current_epoch = 1
         self.num_steps_per_epoch = num_steps_per_epoch
@@ -196,9 +232,11 @@ class DistributedTqdmProgressBar:
         self.progress_bar.close()
 
     def show_metrics(self, metrics: dict[str, float]) -> None:
-        description = f'Epoch {self.current_epoch}/{self.epochs}'
+        description = f"Epoch {self.current_epoch}/{self.epochs}"
         for name, score in metrics.items():
-            description += f' - {name}: {score:.6f}'
+            if "lr" in name:
+                continue
+            description += f" - {name}: {score:.6f}"
         self.progress_bar.set_description(description)
 
 
