@@ -3,4 +3,3 @@ transformers
 torch>=2.1.0
 tqdm
 sentence_transformers
-wandb
