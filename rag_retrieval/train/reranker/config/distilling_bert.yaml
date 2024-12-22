@@ -1,0 +1,37 @@
+# Model
+model_name_or_path: "/data_train/search/zengziyang/models/BAAI/bge-reranker-v2-m3"
+model_type: "SeqClassificationRanker"
+num_labels: 1 # binary classification
+## Model Max Input Length
+max_len: 512 
+
+
+# Dataset
+train_dataset: "../../../example_data/t2rank_100.distill.standard.jsonl"
+val_dataset: "../../../example_data/t2rank_100.small.jsonl"
+
+
+# Training
+output_dir: "./output/t2ranking_100_example"
+## Hyperparameters
+loss_type: "point_ce"  # "point_ce" or "point_mse"
+epochs: 2
+lr: 5e-5
+batch_size: 8
+seed: 666
+warmup_proportion: 0.1
+gradient_accumulation_steps: 2 
+### The gradient_accumulation_steps configuration in the deepspeed config file will override `gradient_accumulation_steps`
+mixed_precision: fp16 
+### `mixed_precision` setting other than None will overwrite the mixed_precision configuration in the deepspeed config file
+## Model Saving
+save_on_epoch_end: 1
+num_max_checkpoints: 5
+
+
+## Logging
+log_interval: 10
+log_with: "wandb" # "wandb" or "tensorboard"
+
+
+
