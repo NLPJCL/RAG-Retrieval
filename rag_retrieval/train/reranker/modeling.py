@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import tqdm
 
 
-class CrossEncoder(nn.Module):
+class SeqClassificationRanker(nn.Module):
     def __init__(
         self,
         hf_model=None,
@@ -14,6 +14,8 @@ class CrossEncoder(nn.Module):
         loss_type="point_ce",
         query_format="{}",
         document_format="{}",
+        seq="",
+        special_token="",
     ):
         super().__init__()
 
@@ -23,10 +25,12 @@ class CrossEncoder(nn.Module):
         self.loss_type = loss_type
         self.query_format = query_format
         self.document_format = document_format
+        self.seq = seq
+        self.special_token = special_token
 
     def forward(self, batch, labels=None):
 
-        output = self.model(**batch)
+        output = self.model(**batch, labels=labels)
 
         if labels is not None:
             logits = output.logits
@@ -52,7 +56,8 @@ class CrossEncoder(nn.Module):
         all_logits = []
         for start_index in tqdm.tqdm(range(0, len(sentences_pairs), batch_size)):
             sentences_batch = sentences_pairs[start_index : start_index + batch_size]
-            batch_data = self.preprocess(sentences_batch, max_length).to(self.model.device
+            batch_data = self.preprocess(sentences_batch, max_length).to(
+                self.model.device
             )
             output = self.forward(batch_data)
             logits = output.logits.detach().cpu()
@@ -64,19 +69,30 @@ class CrossEncoder(nn.Module):
         return all_logits
 
     def preprocess(self, sentences_pairs, max_len):
-        new_sentences_pairs = []
+        temp = []
         for query, document in sentences_pairs:
-            new_query = self.query_format.format(query.strip())
-            new_document = self.document_format.format(document.strip())
-            new_sentences_pairs.append([new_query, new_document])
-        assert len(new_sentences_pairs) == len(sentences_pairs)
+            new_query = self.query_format.format(query.strip()) + self.seq
+            document_max_length = (
+                max_len
+                - len(self.tokenizer.encode(new_query))
+                - len(self.tokenizer.encode(self.special_token))
+            )
+            document_invalid_ids = self.tokenizer.encode(
+                self.document_format.format(document.strip()),
+                max_length=document_max_length,
+                truncation=True,
+                add_special_tokens=False,
+            )
+            new_document = self.tokenizer.decode(document_invalid_ids)
+            temp.append([new_query, new_document + self.special_token])
+        assert len(temp) == len(sentences_pairs)
+        sentences_pairs = temp
 
         tokens = self.tokenizer.batch_encode_plus(
-            new_sentences_pairs,
+            sentences_pairs,
             add_special_tokens=True,
             padding="longest",
-            max_length=max_len,
-            truncation='only_second',
+            truncation=False,
             return_tensors="pt",
         )
         return tokens
@@ -90,12 +106,23 @@ class CrossEncoder(nn.Module):
         cuda_device="cpu",
         query_format="{}",
         document_format="{}",
+        seq="",
+        special_token="",
     ):
         hf_model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path, num_labels=num_labels, trust_remote_code=True
         )
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        
+
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        if hf_model.config.pad_token_id is None:
+            hf_model.config.pad_token_id = tokenizer.pad_token_id
+
+        # make sure tokenizer is right pad in our logic
+        # https://github.com/huggingface/transformers/blob/5d7739f15a6e50de416977fe2cc9cb516d67edda/src/transformers/models/qwen2/modeling_qwen2.py#L1201
+        tokenizer.padding_side = "right"
+
         reranker = cls(
             hf_model,
             tokenizer,
@@ -103,6 +130,8 @@ class CrossEncoder(nn.Module):
             loss_type,
             query_format,
             document_format,
+            seq,
+            special_token,
         )
         return reranker
 
@@ -121,15 +150,19 @@ class CrossEncoder(nn.Module):
         )
 
 
-def test_CrossEncoder():
-    ckpt_path = "./bge-reranker-m3-base"
-    reranker = CrossEncoder.from_pretrained(
+def test_SeqClassificationRanker():
+    ckpt_path = "/data_train/search/zengziyang/models/Qwen/Qwen2.5-7B-Instruct-mlp-1024"
+    reranker = SeqClassificationRanker.from_pretrained(
         model_name_or_path=ckpt_path,
         num_labels=1,  # binary classification
         cuda_device="cuda:0",
+        loss_type="point_ce",
+        query_format="query: {}",
+        document_format="document: {}",
+        seq=" ",
+        special_token="<score>"
     )
     reranker.eval()
-    
 
     input_lst = [
         ["我喜欢中国", "我喜欢中国"],
@@ -148,4 +181,4 @@ def test_CrossEncoder():
 
 
 if __name__ == "__main__":
-    test_CrossEncoder()
+    test_SeqClassificationRanker()

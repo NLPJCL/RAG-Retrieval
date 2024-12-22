@@ -1,9 +1,7 @@
 # Model
-model_name_or_path: "/data_train/search/zengziyang/models/BAAI/bge-reranker-v2-m3"
-model_type: "SeqClassificationRanker"
+model_name_or_path: "./bge-reranker-m3-base"
+model_type: "bert_encoder"
 num_labels: 1 # binary classification
-## Model Max Input Length
-max_len: 512 
 
 
 # Dataset
@@ -11,10 +9,17 @@ train_dataset: "../../../example_data/t2rank_100.jsonl"
 val_dataset: "../../../example_data/t2rank_100.small.jsonl"
 max_label: 1
 min_label: 0
+max_len: 512 
+query_format: "{}"
+document_format: "{}"
 
 
 # Training
 output_dir: "./output/t2ranking_100_example"
+save_on_epoch_end: 1
+num_max_checkpoints: 5
+
+
 ## Hyperparameters
 loss_type: "point_ce"  # "point_ce" or "point_mse"
 epochs: 2
@@ -22,14 +27,8 @@ lr: 5e-5
 batch_size: 8
 seed: 666
 warmup_proportion: 0.1
-gradient_accumulation_steps: 2 
-### The gradient_accumulation_steps configuration in the deepspeed config file will override `gradient_accumulation_steps`
+gradient_accumulation_steps: 2
 mixed_precision: fp16 
-### `mixed_precision` setting other than None will overwrite the mixed_precision configuration in the deepspeed config file
-## Model Saving
-save_on_epoch_end: 1
-num_max_checkpoints: 5
-
 
 ## Logging
 log_interval: 10

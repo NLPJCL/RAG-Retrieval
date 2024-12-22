@@ -48,27 +48,30 @@ JSONL 文件中每一行是一个字典字符串，其中蕴含单个 query 下�
 #bert类模型训练, fsdp(ddp)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" accelerate launch \
+CUDA_VISIBLE_DEVICES="0,1" nohup accelerate launch \
 --config_file ../../../config/xlmroberta_default_config.yaml \
 train_reranker.py \
---config config/training_bert.yaml
+--config config/training_bert.yaml \
+>./logs/training_bert.log &
 ```
 
 #bert类模型蒸馏, fsdp(ddp)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" accelerate launch \
+CUDA_VISIBLE_DEVICES="0,1" nohup accelerate launch \
 --config_file ../../../config/xlmroberta_default_config.yaml \
 train_reranker.py \
---config config/distilling_bert.yaml
+--config config/distilling_bert.yaml \
+>./logs/distilling_bert.log &
 ```
 
 #llm model, deepspeed(zero1-2, not for zero3)
 ```bash
-CUDA_VISIBLE_DEVICES="0,1,2,3" accelerate launch \
+CUDA_VISIBLE_DEVICES="0,1" nohup accelerate launch \
 --config_file ../../../config/deepspeed/deepspeed_zero1.yaml \
 train_reranker.py \
---config config/training_llm.yaml
+--config config/training_llm.yaml \
+>./logs/training_llm_deepspeed1.log &
 ```
 
 **参数解释**
@@ -99,10 +102,10 @@ train_reranker.py \
 - `log_interval`：模型每更新 x 次参数记录一次 loss
 - `log_with`：可视化工具，从 wandb 和 tensorboard 中选择
 
-SeqClassificationRanker 模型参数：
+模型参数：
 - `num_labels`：模型输出 logit 的数目，即为模型分类类别的个数
 - 对于 LLM 用于判别式排序打分时，需要人工构造输入格式，由此引入下列参数
-  - `query_format`, e.g. "query: {}" 
+  - `query_format`, e.g. "query: {}"
   - `document_format`, e.g. "document: {}" 
   - `seq`：分隔 query 和 document 部分, e.g. " "
   - `special_token`：预示着 document 内容的结束，引导模型开始打分，理论上可以是任何 token, e.g. "\<score>" 

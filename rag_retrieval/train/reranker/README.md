@@ -43,28 +43,31 @@ Users can simplify their datasets to the following format:
 ## Training BERT-like Models, fsdp(ddp)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" accelerate launch \
+CUDA_VISIBLE_DEVICES="0,1" nohup accelerate launch \
 --config_file ../../../config/xlmroberta_default_config.yaml \
 train_reranker.py \
---config config/training_bert.yaml
+--config config/training_bert.yaml \
+>./logs/training_bert.log &
 ```
 
 ## Distilling BERT-like Models, fsdp(ddp)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" accelerate launch \
+CUDA_VISIBLE_DEVICES="0,1" nohup accelerate launch \
 --config_file ../../../config/xlmroberta_default_config.yaml \
 train_reranker.py \
---config config/distilling_bert.yaml
+--config config/distilling_bert.yaml \
+>./logs/distilling_bert.log &
 ```
 
 ## Training LLM Models, deepspeed(zero1-2, not for zero3)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1,2,3" accelerate launch \
+CUDA_VISIBLE_DEVICES="0,1" nohup accelerate launch \
 --config_file ../../../config/deepspeed/deepspeed_zero1.yaml \
 train_reranker.py \
---config config/training_llm.yaml
+--config config/training_llm.yaml \
+>./logs/training_llm_deepspeed1.log &
 ```
 
 **Parameter Explanation**
@@ -95,7 +98,7 @@ Training-related:
 - `log_interval`: Log loss every x parameter updates.
 - `log_with`: Visualization tool, choose from wandb and tensorboard.
 
-SeqClassificationRanker Model Parameters:
+Model Parameters:
 - `num_labels`: Number of logits output by the model, corresponding to the number of classification categories.
 - For LLM used in discriminative ranking, the input format needs to be manually constructed, introducing the following parameters:
   - `query_format`, e.g., "query: {}"

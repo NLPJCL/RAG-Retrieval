@@ -55,7 +55,7 @@ class RankerDataset(Dataset):
                             text_neg = shuffle_text(text_neg, self.shuffle_rate)
                         train_data.append([data_dic["query"], text_neg, neg_score])
 
-        # only visualize the label distribution on the main process
+        #only visualize the label distribution on the main process
         if torch.distributed.get_rank() == 0:
             print(f"----- {self.tag} data -----")
             visualize_label_distribution(label_distribution)
@@ -79,26 +79,26 @@ class RankerDataset(Dataset):
 
         # max_len 实际的作用由模型本身界定
         tokens = self.model.preprocess(all_batch_pairs, self.max_len)
-        if isinstance(tokens, tuple):
-            # LLM-based Ranker models may return a tuple consisting of tokenized ids and associated role messages.
-            tokens = tokens[0]
         label_batch = torch.tensor(all_labels, dtype=torch.float16)
 
         return tokens, label_batch
 
 
 def test_RankerDataset():
-    from modeling import SeqClassificationRanker
+    from model_llm import LLMDecoder
 
     train_data_path = "../../../example_data/t2rank_100.jsonl"
-    model_name_or_path = "Qwen/Qwen2.5-1.5B"
-
-    model = SeqClassificationRanker.from_pretrained(
-        model_name_or_path=model_name_or_path,
+    ckpt_path = "./Qwen2-1.5B-Instruct"
+    reranker = LLMDecoder.from_pretrained(
+        model_name_or_path=ckpt_path,
+        num_labels=1,  # binary classification
+        loss_type="point_ce",
         query_format="query: {}",
         document_format="document: {}",
+        seq=" ",
+        special_token="<score>"
     )
-    dataset = RankerDataset(train_data_path, target_model=model, max_len=128)
+    dataset = RankerDataset(train_data_path, target_model=reranker, max_len=512)
 
     dataloader = DataLoader(dataset, batch_size=32, collate_fn=dataset.collate_fn)
 
@@ -106,7 +106,7 @@ def test_RankerDataset():
 
     for batch in tqdm.tqdm(dataloader):
         print(batch)
-        print(model.tokenizer.batch_decode(batch[0]["input_ids"])[0])
+        print(reranker.tokenizer.batch_decode(batch[0]["input_ids"])[0])
         break
 
 

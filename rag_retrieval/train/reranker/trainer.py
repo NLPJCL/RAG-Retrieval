@@ -43,7 +43,7 @@ class Trainer:
         self.log_interval = log_interval
         self.save_on_epoch_end = save_on_epoch_end
         self.tokenizer = tokenizer
-        self.min_val_loss = 99999
+        self.min_val_loss = 100000
 
         self.train_loss_tracker = LossTracker()
         self.validation_loss_tracker = LossTracker()
@@ -58,6 +58,7 @@ class Trainer:
 
     def train(self):
         for current_epoch in range(1, self.epochs + 1):
+
             self.model.train()
             self.progress_bar.on_epoch_start()
 
@@ -75,24 +76,26 @@ class Trainer:
                     self.train_loss_tracker.update(loss)
 
                 if batch_index % self.log_interval == 0:
-                    training_log_dict = dict(training_loss=self.train_loss_tracker.loss)
-                    lr_list = self.lr_scheduler.get_lr()
-                    for group_id, lr in enumerate(lr_list, 0):
-                        training_log_dict[f"lr_group_{group_id}"] = lr
-                    self.log_metrics(training_log_dict, step=self.current_step)
+                    self.log_metrics(
+                        {
+                        'loss': self.train_loss_tracker.loss,
+                        'lr':float(self.lr_scheduler.get_lr()[0])
+                        },
+                        step=self.current_step,
+                    )
 
-                if (
-                    self.validation_dataloader
-                    and batch_index % (self.log_interval * 30) == 0
-                ):
-                    validation_loss = evaluate(
-                        self.model,
-                        self.validation_dataloader,
-                        self.validation_loss_tracker,
-                    )
-                    self.accelerator.log(
-                        {"validation_loss": validation_loss}, step=self.current_step
-                    )
+                # if (
+                #     self.validation_dataloader
+                #     and batch_index % (self.log_interval * 30) == 0
+                # ):
+                #     validation_loss = evaluate(
+                #         self.model,
+                #         self.validation_dataloader,
+                #         self.validation_loss_tracker,
+                #     )
+                #     self.accelerator.log(
+                #         {"validation_loss": validation_loss}, step=self.current_step
+                #     )
                     # If you want to save the model with min validation loss, uncomment the following code.
                     # if validation_loss < self.min_val_loss:
                     #     if self.accelerator.is_local_main_process and self.current_step > 0:
@@ -182,10 +185,9 @@ def evaluate(
     dataloader: DataLoader,
     loss_tracker: LossTracker | None = None,
 ):
-    model.eval()
     loss_tracker = loss_tracker or LossTracker()
     for batch in dataloader:
-        with torch.inference_mode():
+        with torch.no_grad():
             batch_output = model(batch[0], batch[1])
             loss = batch_output.loss
             loss_tracker.update(loss)
@@ -234,8 +236,6 @@ class DistributedTqdmProgressBar:
     def show_metrics(self, metrics: dict[str, float]) -> None:
         description = f"Epoch {self.current_epoch}/{self.epochs}"
         for name, score in metrics.items():
-            if "lr" in name:
-                continue
             description += f" - {name}: {score:.6f}"
         self.progress_bar.set_description(description)
 
