@@ -140,7 +140,7 @@ def main():
 
     if args.warmup_proportion != 0:
 
-        total_steps = len(train_dataloader) * args.epochs
+        total_steps = len(train_dataloader) * args.epochs // args.gradient_accumulation_steps
         num_warmup_steps = int(args.warmup_proportion * total_steps)
 
         # get_constant_schedule_with_warmup
