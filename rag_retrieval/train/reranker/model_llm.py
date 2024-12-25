@@ -171,7 +171,6 @@ def test_LLMDecoder():
     reranker = LLMDecoder.from_pretrained(
         model_name_or_path=ckpt_path,
         num_labels=1,  # binary classification
-        loss_type="point_ce",
         query_format="query: {}",
         document_format="document: {}",
         seq=" ",

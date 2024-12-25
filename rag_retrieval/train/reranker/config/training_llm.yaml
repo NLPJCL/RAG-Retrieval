@@ -9,7 +9,7 @@ train_dataset: "../../../example_data/t2rank_100.jsonl"
 val_dataset: "../../../example_data/t2rank_100.small.jsonl"
 max_label: 1
 min_label: 0
-max_len: 512
+max_len: 1024
 
 query_format: "query: {}"
 document_format: "document: {}"

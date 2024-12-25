@@ -25,9 +25,9 @@ For ranking models, we support the following standard data format:
 {"query": str, "pos": List[str], "neg":List[str], "pos_scores": List, "neg_scores": List}
 ```
 Each line in the JSONL file represents a dictionary string containing all documents for a single query.
-- `pos` contains all documents for the query, which may include both positive and negative samples.
+- `pos` contains all positive samples for the query.
 - `neg` contains all negative samples for the query.
-- `pos_scores` contains the scores corresponding to all positive or negative sample documents for the query.
+- `pos_scores` contains the scores corresponding to all positive sample documents for the query.
 - `neg_scores` contains the scores corresponding to all negative sample documents for the query.
 
 Based on regular training and distillation, there are two scenarios:
@@ -139,7 +139,6 @@ ckpt_path = "./bge-reranker-m3-base"
 reranker = CrossEncoder.from_pretrained(
     model_name_or_path=ckpt_path,
     num_labels=1,  # binary classification
-    loss_type="point_ce"
 )
 reranker.model.to("cuda:0")
 reranker.eval()
@@ -164,7 +163,6 @@ ckpt_path = "./Qwen2-1.5B-Instruct"
 reranker = LLMDecoder.from_pretrained(
     model_name_or_path=ckpt_path,
     num_labels=1,  # binary classification
-    loss_type="point_ce",
     query_format="query: {}",
     document_format="document: {}",
     seq=" ",

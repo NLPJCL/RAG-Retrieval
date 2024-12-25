@@ -24,10 +24,10 @@ num_max_checkpoints: 5
 loss_type: "point_ce"  # "point_ce" or "point_mse"
 epochs: 2
 lr: 5e-5
-batch_size: 8
+batch_size: 96
 seed: 666
 warmup_proportion: 0.1
-gradient_accumulation_steps: 2
+gradient_accumulation_steps: 1
 mixed_precision: fp16 
 
 ## Logging

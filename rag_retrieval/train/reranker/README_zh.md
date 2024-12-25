@@ -27,10 +27,10 @@ pip install -r requirements.txt
 {"query": str, "pos": List[str], "neg":List[str], "pos_scores": List, "neg_scores": List}
 ```
 JSONL 文件中每一行是一个字典字符串，其中蕴含单个 query 下的所有文档。
-- `pos` 为 query 下所有的文档，其中既可以包含正样本也可以包含负样本
-- `neg` 为 query 下所有的负样本
-- `pos_scores` 为 query 下所有正或负样本文档对应的得分
-- `neg_scores` 为 query 下所有负样本文档对应的得分
+- `pos` 为 query 下所有的正样本。
+- `neg` 为 query 下所有的负样本。
+- `pos_scores` 为 query 下所有正样本对应的得分
+- `neg_scores` 为 query 下所有负样本对应的得分
 
 
 按照普通训练和蒸馏可以分为如下两种情况：
@@ -144,7 +144,6 @@ ckpt_path = "./bge-reranker-m3-base"
 reranker = CrossEncoder.from_pretrained(
     model_name_or_path=ckpt_path,
     num_labels=1,  # binary classification
-    loss_type="point_ce"
 )
 reranker.model.to("cuda:0")
 reranker.eval()
@@ -169,7 +168,6 @@ ckpt_path = "./Qwen2-1.5B-Instruct"
 reranker = LLMDecoder.from_pretrained(
     model_name_or_path=ckpt_path,
     num_labels=1,  # binary classification
-    loss_type="point_ce",
     query_format="query: {}",
     document_format="document: {}",
     seq=" ",
