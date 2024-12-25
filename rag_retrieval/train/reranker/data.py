@@ -55,8 +55,8 @@ class RankerDataset(Dataset):
                             text_neg = shuffle_text(text_neg, self.shuffle_rate)
                         train_data.append([data_dic["query"], text_neg, neg_score])
 
-        #only visualize the label distribution on the main process
-        if torch.distributed.get_rank() == 0:
+        # Only visualize the label distribution on the main process of distributed mode or in the single process mode
+        if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
             print(f"----- {self.tag} data -----")
             visualize_label_distribution(label_distribution)
             
@@ -96,7 +96,7 @@ def test_RankerDataset():
         query_format="query: {}",
         document_format="document: {}",
         seq=" ",
-        special_token="<score>"
+        special_token="</s>"
     )
     dataset = RankerDataset(train_data_path, target_model=reranker, max_len=512)
 
