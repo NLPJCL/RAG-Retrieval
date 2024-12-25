@@ -80,3 +80,82 @@ def shuffle_text(text, shuffle_ratio=0.15):
         return " ".join(split_text)
     else:
         return text
+    
+
+def create_adamw_optimizer_with_special_lr_groups(
+    model,
+    lr: float,
+    weight_decay=1e-2,
+    no_decay_keywords=("bias", "LayerNorm", "layernorm"),
+    special_lr_groups=None,  # 额外的学习率分组
+):
+    """
+    Create an AdamW optimizer with special learning rate groups.
+        查看 model 具体结构信息，确保 special_lr_groups 的关键词能够匹配到模型的参数。
+        special_lr_groups = [
+            {"keywords": ["score.weight"], "lr": 1e-4},
+        ]
+    """
+    parameters = list(model.named_parameters())
+    assigned_params = set()  # 用于追踪已分配的参数
+
+    optimizer_grouped_parameters = []
+
+    # 1. 先处理 special_lr_groups
+    if special_lr_groups:
+        for group in special_lr_groups:
+            matched_params = [
+                p
+                for n, p in parameters
+                if any(keyword in n for keyword in group["keywords"])
+                and n not in assigned_params
+            ]
+            if matched_params:  # 如果有匹配的参数
+                optimizer_grouped_parameters.append(
+                    {
+                        "params": matched_params,
+                        "weight_decay": group.get("weight_decay", weight_decay),
+                        "lr": group["lr"],  # 特定学习率
+                    }
+                )
+                # 更新已分配的参数集合
+                assigned_params.update(
+                    [
+                        n
+                        for n, p in parameters
+                        if any(keyword in n for keyword in group["keywords"])
+                        and n not in assigned_params
+                    ]
+                )
+
+    # 2. 再处理默认的 no_decay 和 decay 分组
+    optimizer_grouped_parameters.append(
+        {
+            "params": [
+                p
+                for n, p in parameters
+                if not any(nd in n for nd in no_decay_keywords)
+                and n not in assigned_params
+            ],
+            "weight_decay": weight_decay,
+        }
+    )
+    optimizer_grouped_parameters.append(
+        {
+            "params": [
+                p
+                for n, p in parameters
+                if any(nd in n for nd in no_decay_keywords) and n not in assigned_params
+            ],
+            "weight_decay": 0.0,
+        }
+    )
+    # 确保模型的所有参数分散在优化器中的所有参数组中，不重复不遗漏
+    assert sum(
+        [
+            len(optimizer_grouped_parameters[i]["params"])
+            for i in range(len(optimizer_grouped_parameters))
+        ]
+    ) == len(parameters)
+    optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=lr)
+    return optimizer
