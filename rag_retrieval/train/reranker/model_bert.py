@@ -10,7 +10,6 @@ class CrossEncoder(nn.Module):
         self,
         hf_model=None,
         tokenizer=None,
-        cuda_device="cpu",
         loss_type="point_ce",
         query_format="{}",
         document_format="{}",
@@ -19,7 +18,6 @@ class CrossEncoder(nn.Module):
 
         self.model = hf_model
         self.tokenizer = tokenizer
-        self.cuda_device = cuda_device
         self.loss_type = loss_type
         self.query_format = query_format
         self.document_format = document_format
@@ -87,7 +85,6 @@ class CrossEncoder(nn.Module):
         model_name_or_path,
         loss_type="point_ce",
         num_labels=1,
-        cuda_device="cpu",
         query_format="{}",
         document_format="{}",
     ):
@@ -99,7 +96,6 @@ class CrossEncoder(nn.Module):
         reranker = cls(
             hf_model,
             tokenizer,
-            cuda_device,
             loss_type,
             query_format,
             document_format,
@@ -126,8 +122,8 @@ def test_CrossEncoder():
     reranker = CrossEncoder.from_pretrained(
         model_name_or_path=ckpt_path,
         num_labels=1,  # binary classification
-        cuda_device="cuda:0",
     )
+    reranker.model.to("cuda:0")
     reranker.eval()
     
 
