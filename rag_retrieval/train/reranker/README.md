@@ -22,21 +22,31 @@ After installing the dependencies, we will demonstrate how to fine-tune the open
 
 For ranking models, we support the following standard data format:
 ```
-{"query": str (required), "pos": List[str] (required), "neg": List[str] (optional), "pos_scores": List (optional), "neg_scores": List (optional)}
+{"query": str, "pos": List[str], "neg":List[str], "pos_scores": List, "neg_scores": List}
 ```
-Each line in a JSONL file is a dictionary string containing all documents for a single query.
+Each line in the JSONL file represents a dictionary string containing all documents for a single query.
+- `pos` contains all documents for the query, which may include both positive and negative samples.
+- `neg` contains all negative samples for the query.
+- `pos_scores` contains the scores corresponding to all positive or negative sample documents for the query.
+- `neg_scores` contains the scores corresponding to all negative sample documents for the query.
 
-Users can simplify their datasets to the following format:
+Based on regular training and distillation, there are two scenarios:
+
+- Regular Data: When the relevance of labeled data is binary, i.e., labels are only 0 or 1, refer to the [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) file.
 ```
 {"query": str, "pos": List[str], "neg": List[str]}
 ```
-- For binary classification labels (0 or 1), refer to the [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) file. During training, we use Binary Cross Entropy loss for optimization. By default, pairs of query and positive examples are assigned a score of 1, and pairs of query and negative examples are assigned a score of 0. During prediction, the final model output is a sigmoid-transformed logit, ranging from 0 to 1.
+In training, we use `Binary Cross Entropy loss` for optimization. By default, we form pairs of queries with positive examples (score=1) and queries with negative examples (score=0). During prediction, the model's final prediction score is the logit output by the model, which can be normalized to the 0-1 range using sigmoid.
+
+- Distillation Data: Users can directly use `pos` (which includes both positive and negative samples) and `pos_scores` to construct the dataset. Refer to the [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) file.
 ```
 {"query": str, "pos": List[str], "pos_scores": List[int|float]}
 ```
-- Users can also directly use `pos` and `pos_scores` to construct the dataset.
-- **Multi-level Labels**: If the relevance `pos_scores` in the annotated data are multi-level labels (e.g., labels can be 0, 1, 2, etc.), users can specify the maximum and minimum labels when creating the dataset. The discrete labels will be automatically scaled to the 0-1 score range. For example, if there are three levels of labels, they will be mapped as follows: label 0: 0, label 1: 0.5, label 2: 1.
-- **Knowledge Distillation**: If the relevance `pos_scores` in the annotated data are continuous scores in the range of 0-1, indicating knowledge distillation, refer to the [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) file. For such data, we use Binary Cross Entropy loss or Mean Squared Error (MSE) loss for optimization during training. Code for scoring and annotating using LLM can be found in the [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) directory, and code for converting distillation data format can be found in [distill_data_transfer.py](../../../example_data/distill_data_transfer.py).
+
+**Multi-level Labels**: When the relevance `pos_scores` of labeled data are multi-level labels, i.e., labels can be 0, 1, 2, etc., users need to manually specify the max label and min label when setting dataset parameters (by default, max label is 1 and min label is 0). The dataset will automatically scale the discrete labels uniformly to the 0-1 score range. For example, if there are three levels of labels in the dataset, then label 0: 0, label 1: 0.5, and label 2: 1.
+
+**Knowledge Distillation**: When the relevance `pos_scores` of labeled data are continuous scores ranging from 0 to 1, it indicates knowledge distillation. For this type of data, in training, we use `Binary Cross Entropy loss` or `Mean Squared Error (MSE)` loss for optimization under the context of soft labels. In the [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) directory, you can find code for scoring and labeling relevance using LLM.
+
 
 # Training
 
@@ -104,8 +114,8 @@ Model Parameters:
   - `query_format`, e.g., "query: {}"
   - `document_format`, e.g., "document: {}"
   - `seq`: Separates the query and document parts, e.g., " "
-  - `special_token`: Indicates the end of the document content, prompting the model to start scoring. It can be any token, e.g., "\<score>"
-  - Overall format: "query: xxx document: xxx\<score>"
+  - `special_token`: Indicates the end of the document content, prompting the model to start scoring. It can be any token, e.g., "\</s>"
+  - Overall format: "query: xxx document: xxx\</s>"
 
 For BERT-like models, fsdp is used by default to support multi-GPU training. Here are examples of configuration files:
 - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml): Use this configuration file for training a ranking model from scratch based on hfl/chinese-roberta-wwm-ext.
@@ -121,43 +131,55 @@ Modifications for multi-GPU training configuration:
 
 # Loading the Model for Prediction
 
-For saved models, you can easily load them for prediction. An example is provided in `modeling.py`.
+For saved models, you can easily load them for prediction. 
 
-To accommodate special cases of LLMs, such as "Qwen/Qwen2.5-1.5B," for discriminative ranking, a relevant format has been designed. The practical effect is: "query: {xxx} document: {xxx}<score>". Experiments show that the introduction of `special_token` significantly enhances the ranking performance of LLMs.
-
+Cross-Encoder Models（BERT-like）
 ```python
-ckpt_path = "maidalun1020/bce-reranker-base_v1" 
-device = "cuda:0"
-reranker = SeqClassificationRanker.from_pretrained(
-    model_name_or_path=ckpt_path, 
-    num_labels=1, # binary classification
-    cuda_device="cuda:0",
-    loss_type="point_ce",
-    query_format="{}",
-    document_format="{}",
-    seq="",
-    special_token=""
+ckpt_path = "./bge-reranker-m3-base"
+reranker = CrossEncoder.from_pretrained(
+    model_name_or_path=ckpt_path,
+    num_labels=1,  # binary classification
+    loss_type="point_ce"
 )
-# query_format="query: {}",
-# document_format="document: {}",
-# seq=" ",
-# special_token="<score>"
-
+reranker.model.to("cuda:0")
 reranker.eval()
-reranker.model.to(device)
 
 input_lst = [
     ["I love China", "I love China"],
     ["I love the USA", "I don't like the USA at all"],
-    [
-        "How long does it take to climb Mount Tai?",
-        "It takes 1-8 hours to climb Mount Tai, depending on individual physical fitness. Professional climbers may only need an hour or so to reach the summit, while those with lower physical fitness may take over 5 hours.",
-    ],
 ]
 
 res = reranker.compute_score(input_lst)
 
 print(torch.sigmoid(res[0]))
 print(torch.sigmoid(res[1]))
-print(torch.sigmoid(res[2]))
+```
+LLM-Decoder Models （MLP-based scalar mapping）
+> To accommodate special cases of LLMs, such as "Qwen/Qwen2.5-1.5B," for discriminative ranking, a relevant format has been designed. The practical effect is: "query: {xxx} document: {xxx}\</s>". 
+> 
+> Experiments show that the introduction of `</s>` significantly enhances the ranking performance of LLMs [cited from https://arxiv.org/abs/2411.04539 section 4.3].
+
+```python
+ckpt_path = "./Qwen2-1.5B-Instruct"
+reranker = LLMDecoder.from_pretrained(
+    model_name_or_path=ckpt_path,
+    num_labels=1,  # binary classification
+    loss_type="point_ce",
+    query_format="query: {}",
+    document_format="document: {}",
+    seq=" ",
+    special_token="</s>",
+)
+reranker.model.to("cuda:0")
+reranker.eval()
+
+input_lst = [
+    ["I love China", "I love China"],
+    ["I love the USA", "I don't like the USA at all"],
+]
+
+res = reranker.compute_score(input_lst)
+
+print(torch.sigmoid(res[0]))
+print(torch.sigmoid(res[1]))
 ```

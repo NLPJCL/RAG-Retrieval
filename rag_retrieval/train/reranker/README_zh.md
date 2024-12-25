@@ -24,22 +24,31 @@ pip install -r requirements.txt
 
 对于排序模型，我们支持如下的标准数据格式：
 ```
-{"query": str (required), "pos": List[str] (required), "neg":List[str](optional), "pos_scores": List(optional), "neg_scores": List(optional)}
+{"query": str, "pos": List[str], "neg":List[str], "pos_scores": List, "neg_scores": List}
 ```
 JSONL 文件中每一行是一个字典字符串，其中蕴含单个 query 下的所有文档。
+- `pos` 为 query 下所有的文档，其中既可以包含正样本也可以包含负样本
+- `neg` 为 query 下所有的负样本
+- `pos_scores` 为 query 下所有正或负样本文档对应的得分
+- `neg_scores` 为 query 下所有负样本文档对应的得分
 
-用户可以将自己的数据集简化成如下格式：
+
+按照普通训练和蒸馏可以分为如下两种情况：
+
+- 普通数据：当标注数据的相关性为二分类数据，即 label 只存在 0 和 1 时，可参考 [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) 文件。
 ```
-{"query": str, "pos": List[str], "neg":List[str]
+{"query": str, "pos": List[str], "neg":List[str]}
 ```
-- 当标注数据的相关性为二分类数据，即 label 只存在 0 和 1 时，可参考 [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) 文件。
-在训练中，我们采用二分类交叉熵损失 `Binary Cross Entropy`来进行优化。在默认情况下，我们会把 query 和正例组成 pair，分数为 1；query 和负例组成 pair，分数为 0。在预测时，模型最终的预测分数为模型输出的 logit 经过 sigmoid 后的值，范围在 0-1 之间。
+在训练中，我们采用二分类交叉熵损失 `Binary Cross Entropy`来进行优化。在默认情况下，我们会把 query 和正例组成 pair，分数为 1；query 和负例组成 pair，分数为 0。在预测时，模型最终的预测分数为模型输出的 logit，后续可以经过 sigmoid 归一化为 0-1 区间。
+
+- 蒸馏数据：用户可以直接使用 `pos`（同时包含正样本和负样本）和 `pos_scores` 来构建数据集，可参考 [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) 文件。
 ```
 {"query": str, "pos": List[str], "pos_scores": List[int|float]}
 ```
-- 用户也可以直接使用 `pos` 和 `pos_scores` 来构建数据集
-- **多级标签**：当标注数据的相关性 `pos_scores` 为多级标签，即 label 可能等于 0,1,2 等，用户可以在创建数据集的时候指定 max label 和 min label 的大小。此时数据集内部会自动将离散的 label 均匀放缩到 0-1 分数区间中。例如数据集中存在三级标签，那么 label 0: 0，label 1: 0.5，label 2: 1。
-- **知识蒸馏**：当标注数据的相关性 `pos_scores` 为范围 0-1 的连续分数时，即表示进行知识蒸馏，可参考 [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) 文件。对于该种数据，在训练中，我们采用soft label 背景下的二分类交叉熵损失 `Binary Cross Entropy` 或均方损失 `MSE` 来进行优化。在[examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) 目录下可以找到用 LLM 进行相关性打分标注的代码，在 [distill_data_transfer.py](../../../example_data/distill_data_transfer.py) 中可以找到进行蒸馏数据格式转换的代码。
+  
+**多级标签**：当标注数据的相关性 `pos_scores` 为多级标签，即 label 可能等于 0,1,2 等，用户在设置数据集参数的时候需要手动指定 max label 和 min label（初始条件下 max label 默认为 1，min label 默认为 0）。此时数据集内部会自动将离散的 label 均匀放缩到 0-1 分数区间中。例如数据集中存在三级标签，那么 label 0: 0，label 1: 0.5，label 2: 1。
+
+**知识蒸馏**：当标注数据的相关性 `pos_scores` 为范围 0-1 的连续分数时，即表示进行知识蒸馏，对于该种数据，在训练中，我们采用soft label 背景下的二分类交叉熵损失 `Binary Cross Entropy` 或均方损失 `MSE` 来进行优化。在 [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) 目录下可以找到用 LLM 进行相关性打分标注的代码。
 
 
 
@@ -108,8 +117,8 @@ train_reranker.py \
   - `query_format`, e.g. "query: {}"
   - `document_format`, e.g. "document: {}" 
   - `seq`：分隔 query 和 document 部分, e.g. " "
-  - `special_token`：预示着 document 内容的结束，引导模型开始打分，理论上可以是任何 token, e.g. "\<score>" 
-  - 整体的格式为："query: xxx document: xxx\<score>" 
+  - `special_token`：预示着 document 内容的结束，引导模型开始打分，理论上可以是任何 token, e.g. "\</s>" 
+  - 整体的格式为："query: xxx document: xxx\</s>" 
 
 对于 BERT 类模型，默认使用fsdp来支持多卡训练模型，以下是配置文件的示例。
 - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml), 如果要在 hfl/chinese-roberta-wwm-ext 的基础上从零开始训练的排序，采用该配置文件。
@@ -127,44 +136,56 @@ train_reranker.py \
 
 # 加载模型进行预测
 
-对于保存的模型，你可以很容易加载模型来进行预测。在modeling.py中，我们给出了一个例子。
+对于保存的模型，你可以很容易加载模型来进行预测。
 
-为了满足 LLM 如 "Qwen/Qwen2.5-1.5B" 用于判别式排序的特殊情况，设计了相关格式，实际效果为："query: {xxx} document: {xxx}\<score>"，实验显示 special_token 的引入对 LLM 排序性能提升较大。
-
+Cross-Encoder 模型（BERT-like）
 ```python
-ckpt_path = "maidalun1020/bce-reranker-base_v1" 
-device = "cuda:0"
-reranker = SeqClassificationRanker.from_pretrained(
-    model_name_or_path=ckpt_path, 
-    num_labels=1, # binary classification
-    cuda_device="cuda:0",
-    loss_type="point_ce",
-    query_format="{}",
-    document_format="{}",
-    seq="",
-    special_token=""
+ckpt_path = "./bge-reranker-m3-base"
+reranker = CrossEncoder.from_pretrained(
+    model_name_or_path=ckpt_path,
+    num_labels=1,  # binary classification
+    loss_type="point_ce"
 )
-# query_format="query: {}",
-# document_format="document: {}",
-# seq=" ",
-# special_token="<score>"
-
+reranker.model.to("cuda:0")
 reranker.eval()
-reranker.model.to(device)
 
 input_lst = [
     ["我喜欢中国", "我喜欢中国"],
-    ["我喜欢美国", "我一点都不喜欢美国"],
-    [
-        "泰山要多长时间爬上去",
-        "爬上泰山需要1-8个小时，具体的时间需要看个人的身体素质。专业登山运动员可能只需要1个多小时就可以登顶，有些身体素质比较低的，爬的慢的就需要5个多小时了。",
-    ],
+    ["我喜欢美国", "我一点都不喜欢美国"]
 ]
 
 res = reranker.compute_score(input_lst)
 
 print(torch.sigmoid(res[0]))
 print(torch.sigmoid(res[1]))
-print(torch.sigmoid(res[2]))
+```
+
+LLM-Decoder 模型 （基于 MLP 进行标量映射）
+
+> 为了满足 LLM 如 "Qwen/Qwen2.5-1.5B" 用于判别式排序的特殊情况，设计了相关格式，实际效果为："query: {xxx} document: {xxx}\</s>"，实验显示 \</s> 的引入对 LLM 排序性能提升较大 [源于 https://arxiv.org/abs/2411.04539 section 4.3]。
+
+```python
+ckpt_path = "./Qwen2-1.5B-Instruct"
+reranker = LLMDecoder.from_pretrained(
+    model_name_or_path=ckpt_path,
+    num_labels=1,  # binary classification
+    loss_type="point_ce",
+    query_format="query: {}",
+    document_format="document: {}",
+    seq=" ",
+    special_token="</s>",
+)
+reranker.model.to("cuda:0")
+reranker.eval()
+
+input_lst = [
+    ["我喜欢中国", "我喜欢中国"],
+    ["我喜欢美国", "我一点都不喜欢美国"],
+]
+
+res = reranker.compute_score(input_lst)
+
+print(torch.sigmoid(res[0]))
+print(torch.sigmoid(res[1]))
 ```
 
