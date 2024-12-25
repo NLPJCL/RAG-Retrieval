@@ -117,8 +117,8 @@ train_reranker.py \
   - `query_format`, e.g. "query: {}"
   - `document_format`, e.g. "document: {}" 
   - `seq`：分隔 query 和 document 部分, e.g. " "
-  - `special_token`：预示着 document 内容的结束，引导模型开始打分，理论上可以是任何 token, e.g. "\<score>" 
-  - 整体的格式为："query: xxx document: xxx\<score>" 
+  - `special_token`：预示着 document 内容的结束，引导模型开始打分，理论上可以是任何 token, e.g. "\</s>" 
+  - 整体的格式为："query: xxx document: xxx\</s>" 
 
 对于 BERT 类模型，默认使用fsdp来支持多卡训练模型，以下是配置文件的示例。
 - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml), 如果要在 hfl/chinese-roberta-wwm-ext 的基础上从零开始训练的排序，采用该配置文件。

@@ -14,7 +14,7 @@ max_len: 512
 query_format: "query: {}"
 document_format: "document: {}"
 seq: "\n"
-special_token: "<score>"
+special_token: "</s>"
 
 
 

@@ -114,8 +114,8 @@ Model Parameters:
   - `query_format`, e.g., "query: {}"
   - `document_format`, e.g., "document: {}"
   - `seq`: Separates the query and document parts, e.g., " "
-  - `special_token`: Indicates the end of the document content, prompting the model to start scoring. It can be any token, e.g., "\<score>"
-  - Overall format: "query: xxx document: xxx\<score>"
+  - `special_token`: Indicates the end of the document content, prompting the model to start scoring. It can be any token, e.g., "\</s>"
+  - Overall format: "query: xxx document: xxx\</s>"
 
 For BERT-like models, fsdp is used by default to support multi-GPU training. Here are examples of configuration files:
 - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml): Use this configuration file for training a ranking model from scratch based on hfl/chinese-roberta-wwm-ext.
