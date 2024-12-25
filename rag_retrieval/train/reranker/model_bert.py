@@ -35,7 +35,7 @@ class CrossEncoder(nn.Module):
             elif self.loss_type == "point_ce":
                 loss_fct = BCEWithLogitsLoss()
                 loss = loss_fct(logits.squeeze(), labels.squeeze())
-            output.loss = loss
+            output["loss"] = loss
 
         return output
 
