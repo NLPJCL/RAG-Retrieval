@@ -28,6 +28,12 @@ class LLMDecoder(nn.Module):
         self.seq = seq
         self.special_token = special_token
 
+        self.special_token_ids = self.tokenizer.encode(
+            self.special_token, add_special_tokens=False
+        )
+        # if `seq` token is "", the `sep_token_ids` will be [].
+        self.sep_token_ids = self.tokenizer.encode(self.seq, add_special_tokens=False)
+
     def forward(self, batch, labels=None):
 
         output = self.model(**batch)
@@ -69,31 +75,39 @@ class LLMDecoder(nn.Module):
         return all_logits
 
     def preprocess(self, sentences_pairs, max_len):
-        temp = []
+        batch_input_ids = []
+
         for query, document in sentences_pairs:
-            new_query = self.query_format.format(query.strip()) + self.seq
-            document_max_length = (
-                max_len
-                - len(self.tokenizer.encode(new_query,add_special_tokens=False))
-                - len(self.tokenizer.encode(self.special_token,add_special_tokens=False))
+            query_ids = self.tokenizer.encode(
+                self.query_format.format(query.strip()),
+                add_special_tokens=False,
             )
-            document_invalid_ids = self.tokenizer.encode(
+            document_max_len = (
+                max_len
+                - len(query_ids)
+                - len(self.special_token_ids)
+                - len(self.sep_token_ids)
+            )
+            document_valid_ids = self.tokenizer.encode(
                 self.document_format.format(document.strip()),
-                max_length=document_max_length,
+                max_length=document_max_len,
                 truncation=True,
                 add_special_tokens=False,
             )
-            new_document = self.tokenizer.decode(document_invalid_ids)
-            temp.append([new_query, new_document + self.special_token])
-        assert len(temp) == len(sentences_pairs)
-        sentences_pairs = temp
+            batch_input_ids.append(
+                query_ids
+                + self.sep_token_ids
+                + document_valid_ids
+                + self.special_token_ids
+            )
+        assert len(batch_input_ids) == len(sentences_pairs)
 
-        tokens = self.tokenizer.batch_encode_plus(
-            sentences_pairs,
+        # padding and add special tokens of model
+        tokens = self.tokenizer.prepare_for_model(
+            batch_input_ids,
             add_special_tokens=True,
             padding="longest",
-            truncation=True,
-            max_length=max_len,
+            truncation=False,
             return_tensors="pt",
         )
         return tokens
@@ -105,24 +119,22 @@ class LLMDecoder(nn.Module):
         loss_type="point_ce",
         num_labels=1,
         cuda_device="cpu",
-        query_format="{}",
-        document_format="{}",
-        seq="",
-        special_token="",
+        query_format="query: {}",
+        document_format="document: {}",
+        seq=" ",
+        special_token="</s>",
     ):
         hf_model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path,
             num_labels=num_labels,
             torch_dtype="auto",
-            trust_remote_code=True
+            trust_remote_code=True,
         )
         tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path,
-            use_fast=True, 
-            trust_remote_code=True
+            model_name_or_path, use_fast=True, trust_remote_code=True
         )
 
-        #if tokenizer.pad_token is None:
+        # if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
         if hf_model.config.pad_token_id is None:
             hf_model.config.pad_token_id = tokenizer.pad_token_id
@@ -158,7 +170,6 @@ class LLMDecoder(nn.Module):
         )
 
 
-
 def test_LLMDecoder():
     ckpt_path = "./Qwen2-1.5B-Instruct"
     reranker = LLMDecoder.from_pretrained(
@@ -169,7 +180,7 @@ def test_LLMDecoder():
         query_format="query: {}",
         document_format="document: {}",
         seq=" ",
-        special_token="<score>"
+        special_token="</s>",
     )
     reranker.eval()
 
@@ -187,8 +198,6 @@ def test_LLMDecoder():
     print(torch.sigmoid(res[0]))
     print(torch.sigmoid(res[1]))
     print(torch.sigmoid(res[2]))
-
-
 
 
 if __name__ == "__main__":
