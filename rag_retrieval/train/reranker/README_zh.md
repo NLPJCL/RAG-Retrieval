@@ -46,7 +46,6 @@ pip install -r requirements.txt
 ```
 对于这种数据，用户在设置数据集参数的时候需要手动指定 max label 和 min label（初始条件下 max label 默认为 1，min label 默认为 0）。在训练中，我们采用均方损失 `MSE` 或者soft label 下的二分类交叉熵损失 `Binary Cross Entropy`来进行训练。
 
-
 - 蒸馏数据：用户可以直接使用 `pos`（同时包含正样本和负样本）和 `pos_scores` 来构建数据集(`pos_scores` 为范围 0-1 的连续分数)，可参考 [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) 文件。
 ```
 {"query": str, "pos": List[str], "pos_scores": List[int|float]}
@@ -90,16 +89,16 @@ train_reranker.py \
 多卡训练config_file:
 
 - 对于 BERT 类模型，默认使用fsdp来支持多卡训练模型，以下是配置文件的示例。
-  - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml), 如果要在 hfl/chinese-roberta-wwm-ext 的基础上从零开始训练的排序，采用该配置文件。
-  -  [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml), 如果要在 BAAI/bge-reranker-base、maidalun1020/bce-reranker-base_v1、BAAI/bge-reranker-v2-m3 的基础上进行微调，采用该配置文件，因为其都是在多语言的 XLMRoberta 的基础上训练而来。
+  - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml), 如果要在 hfl/chinese-roberta-wwm-ext 的基础上从零开始训练的排序，采用该配置文件
+  -  [xlmroberta_default_config](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/xlmroberta_default_config.yaml), 如果要在 BAAI/bge-reranker-base、maidalun1020/bce-reranker-base_v1、BAAI/bge-reranker-v2-m3 的基础上进行微调，采用该配置文件，因为其都是在多语言的 XLMRoberta 的基础上训练而来
 
-- 对于 LLM 类模型，建议使用 deepspeed 来支持多卡训练模型，目前只支持 zero1 和 zero2 的训练阶段，以下是配置文件的示例。
+- 对于 LLM 类模型，建议使用 deepspeed 来支持多卡训练模型，目前只支持 zero1 和 zero2 的训练阶段，以下是配置文件的示例
   - [deepspeed_zero1](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/deepspeed/deepspeed_zero1.yaml)
   - [deepspeed_zero2](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/deepspeed/deepspeed_zero2.yaml)
 
 - 多卡训练配置文件修改:
-  - 修改命令中的 CUDA_VISIBLE_DEVICES="0" 为你想要设置的多卡。
-  - 修改上述提到的配置文件的 num_processes 为你想要跑的卡的数量。
+  - 修改命令中的 CUDA_VISIBLE_DEVICES="0" 为你想要设置的多卡
+  - 修改上述提到的配置文件的 num_processes 为你想要跑的卡的数量
 
 
 模型方面：
@@ -120,7 +119,7 @@ train_reranker.py \
 - `lr`：学习率，一般1e-5到5e-5之间
 - `batch_size`：每个 batch 中 query-doc pair 对的数量
 - `seed`：设置统一种子，用于实验结果的复现
-- `warmup_proportion`：学习率预热步数占模型更新步数次数的比例，如果设置为 0，那么不进行学习率预热，直接从设置的 `lr` 进行余弦衰退
+- `warmup_proportion`：学习率预热步数占模型更新总步数的比例，如果设置为 0，那么不进行学习率预热，直接从设置的 `lr` 进行余弦衰退
 - `gradient_accumulation_steps`：梯度累积步数，模型实际的 batch_size 大小等于 `batch_size` * `gradient_accumulation_steps` * `num_of_GPUs`
 - `mixed_precision`：是否进行混合精度的训练，以降低显存的需求。混合精度训练通过在计算使用低精度，更新参数用高精度，来优化显存占用。并且 bf16（Brain Floating Point 16）可以有效降低 loss scaling 的异常情况，但该类型仅被部分硬件支持
 - `save_on_epoch_end`：是否在每一个 epoch 结束后都保存模型
