@@ -40,17 +40,18 @@ pip install -r requirements.txt
 ```
 对于这种数据，在训练中，我们采用二分类交叉熵损失 `Binary Cross Entropy`来进行训练。在默认情况下，我们会把 query 和正例组成 pair，分数为 1；query 和负例组成 pair，分数为 0。在预测时，模型最终的预测分数为模型输出的 logit，后续可以经过 sigmoid 归一化为 0-1 区间。
 
-- 蒸馏数据：用户可以直接使用 `pos`（同时包含正样本和负样本）和 `pos_scores` 来构建数据集(`pos_scores` 为范围 0-1 的连续分数)，可参考 [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) 文件。
-```
-{"query": str, "pos": List[str], "pos_scores": List[int|float]}
-```
-对于这种数据,在训练中，我们采用均方损失 `MSE` 或者soft label 下的二分类交叉熵损失 `Binary Cross Entropy`来进行训练。在 [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) 目录下可以找到用 LLM 进行相关性打分标注的代码。
-
 - 多级标签数据：当标注数据中query和doc的相关性为多分类数据，即 label 为多级标签，（可能等于 0,1,2 等）,用户可以在pos_scores中指定相关性的级别。此时数据集内部会自动将离散的 label 均匀放缩到 0-1 分数区间中。例如数据集中存在三级标签（0，1，2），那么 label 0: 0，label 1: 0.5，label 2: 1
 ```
 {"query": str, "pos": List[str], "pos_scores": List[int|float]}
 ```
 对于这种数据，用户在设置数据集参数的时候需要手动指定 max label 和 min label（初始条件下 max label 默认为 1，min label 默认为 0）。在训练中，我们采用均方损失 `MSE` 或者soft label 下的二分类交叉熵损失 `Binary Cross Entropy`来进行训练。
+
+
+- 蒸馏数据：用户可以直接使用 `pos`（同时包含正样本和负样本）和 `pos_scores` 来构建数据集(`pos_scores` 为范围 0-1 的连续分数)，可参考 [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) 文件。
+```
+{"query": str, "pos": List[str], "pos_scores": List[int|float]}
+```
+对于这种数据,在训练中，我们采用均方损失 `MSE` 或者soft label 下的二分类交叉熵损失 `Binary Cross Entropy`来进行训练。在 [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) 目录下可以找到用 LLM 进行相关性打分标注的代码。
 
 
 # 训练
@@ -103,7 +104,7 @@ train_reranker.py \
 
 模型方面：
 - `model_name_or_path`：开源的reranker模型的名称或下载下来的本地服务器位置。例如：BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1，也可以从零开始训练，例如BERT: hfl/chinese-roberta-wwm-ext 和LLM: Qwen/Qwen2.5-1.5B）
-- `model_type`：当前支持 bert_encoder或llm_decoder类模型。
+- `model_type`：当前支持 bert_encoder或llm_decoder类模型
 - `max_len`：数据支持的最大输入长度
 
 数据集方面：
@@ -119,7 +120,7 @@ train_reranker.py \
 - `lr`：学习率，一般1e-5到5e-5之间
 - `batch_size`：每个 batch 中 query-doc pair 对的数量
 - `seed`：设置统一种子，用于实验结果的复现
-- `warmup_proportion`：学习率预热步数占模型更新步数次数的比例，如果设置为 0，那么不进行学习率预热，直接从设置的 `lr` 进行余弦衰退。
+- `warmup_proportion`：学习率预热步数占模型更新步数次数的比例，如果设置为 0，那么不进行学习率预热，直接从设置的 `lr` 进行余弦衰退
 - `gradient_accumulation_steps`：梯度累积步数，模型实际的 batch_size 大小等于 `batch_size` * `gradient_accumulation_steps` * `num_of_GPUs`
 - `mixed_precision`：是否进行混合精度的训练，以降低显存的需求。混合精度训练通过在计算使用低精度，更新参数用高精度，来优化显存占用。并且 bf16（Brain Floating Point 16）可以有效降低 loss scaling 的异常情况，但该类型仅被部分硬件支持
 - `save_on_epoch_end`：是否在每一个 epoch 结束后都保存模型

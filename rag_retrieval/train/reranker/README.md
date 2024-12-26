@@ -31,23 +31,23 @@ For ranking models, we support the following standard data format:
 
 For the reranker tasks, the following types of data are supported for fine-tuning:
 
-- Binary data: When the relevance between query and doc in the labeled data is binary data, that is, label only exists in 0 and 1, you  refer to the [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) file.
+- Binary label data: When the relevance between query and doc in the labeled data is binary data, that is, label only exists in 0 and 1, you  refer to the [t2rank_100.jsonl](../../../example_data/t2rank_100.jsonl) file.
 ```
 {"query": str, "pos": List[str], "neg": List[str]}
 ```
 For this kind of data, we use `Binary Cross Entropy` for training. By default, we pair query and positive example with a score of 1; query and negative example with a score of 0. When predicting, the final prediction score of the model is the logit output by the model, which can be normalized to the range of 0-1 through sigmoid.
-
-- Distillation data: Users can directly use `pos` (including both positive and negative samples) and `pos_scores` to construct a dataset (`pos_scores` is a continuous score ranging from 0-1), please refer to the [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) file.
-```
-{"query": str, "pos": List[str], "pos_scores": List[int|float]}
-```
-For this kind of data, we use mean square loss `MSE` or binary cross entropy loss `Binary Cross Entropy` in the soft label for training. You can find the code for using LLM for relevance scoring in the [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) directory.
 
 - Multi-level label data: When the relevance between query and doc in the labeled data is multi-level data, that is, the label is a multi-level label (may be equal to 0, 1, 2, etc.), the user can specify the level of relevance in pos_scores. At this time, the data set will automatically scale the discrete labels evenly to the 0-1 score range. For example, if there are three levels of labels (0, 1, 2) in the data set, then label 0: 0, label 1: 0.5, label 2: 1
 ```
 {"query": str, "pos": List[str], "pos_scores": List[int|float]}
 ```
 For this kind of data, users need to manually specify the max label and min label when setting the dataset parameters (the default value of max label is 1 and min label is 0 ). In training, we use  `MSE` or `Binary Cross Entropy` in the soft label for training.
+
+- Distillation data: Users can directly use `pos` (including both positive and negative samples) and `pos_scores` to construct a dataset (`pos_scores` is a continuous score ranging from 0-1), please refer to the [t2rank_100.distill.standard.jsonl](../../../example_data/t2rank_100.distill.standard.jsonl) file.
+```
+{"query": str, "pos": List[str], "pos_scores": List[int|float]}
+```
+For this kind of data, we use mean square loss `MSE` or binary cross entropy loss `Binary Cross Entropy` in the soft label for training. You can find the code for using LLM for relevance scoring in the [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) directory.
 
 
 
