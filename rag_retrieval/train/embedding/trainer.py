@@ -104,7 +104,7 @@ class Trainer:
                     print(save_dir)
 
                     unwrapped_model = self.accelerator.unwrap_model(self.model)
-                    unwrapped_model.save_pretrained(save_dir, safe_serialization=True)
+                    unwrapped_model.save_pretrained(save_dir, safe_serialization=False)
                     # self.accelerator.save_model(self.model, save_dir)
                     self.tokenizer.save_pretrained(save_dir)
                     # self.accelerator.save_model(self.model, save_dir)

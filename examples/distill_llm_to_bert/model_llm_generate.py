@@ -10,7 +10,7 @@ class LLMGenerateDecoder(nn.Module):
         hf_model = None,
         tokenizer = None, 
         cuda_device = 'cpu', 
-        loss_type = 'classfication',
+        loss_type = 'point_ce',
     ):
         super().__init__()
 
@@ -81,7 +81,7 @@ class LLMGenerateDecoder(nn.Module):
     def from_pretrained(
         cls,
         model_name_or_path,
-        loss_type = 'classfication',
+        loss_type = 'point_ce',
         num_labels = 1,
         cuda_device='cpu',
     ):
