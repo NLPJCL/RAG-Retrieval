@@ -103,8 +103,8 @@ train_reranker.py \
 
 模型方面：
 - `model_name_or_path`：开源的reranker模型的名称或下载下来的本地服务器位置。例如：BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1，也可以从零开始训练，例如BERT: hfl/chinese-roberta-wwm-ext 和LLM: Qwen/Qwen2.5-1.5B）
-- `model_type`：当前支持 SeqClassificationRanker（即能用 AutoModelForSequenceClassification 加载的模型）
-- `max_len`：模型支持的最大输入长度
+- `model_type`：当前支持 bert_encoder或llm_decoder类模型。
+- `max_len`：数据支持的最大输入长度
 
 数据集方面：
 - `train_dataset`：训练数据集，格式见上文
@@ -115,11 +115,11 @@ train_reranker.py \
 训练方面：
 - `output_dir`：训练过程中保存的 checkpoint 和最终模型的目录
 - `loss_type`：从 point_ce（交叉熵损失）和 point_mse（均方损失） 中选择
-- `epoch`：模型在训练数据集上遍历的轮数
-- `lr`：学习率，一般1e-5到5e-5之间。
-- `batch_size`：每个 batch 中 query-doc pair 对的数量。
+- `epoch`：模型在训练数据集上训练的轮数
+- `lr`：学习率，一般1e-5到5e-5之间
+- `batch_size`：每个 batch 中 query-doc pair 对的数量
 - `seed`：设置统一种子，用于实验结果的复现
-- `warmup_proportion`：学习率预热步数占模型更新步数次数的比例，如果设置为 0，那么不进行学习率预热，直接从设置的 `lr` 进行余弦衰退
+- `warmup_proportion`：学习率预热步数占模型更新步数次数的比例，如果设置为 0，那么不进行学习率预热，直接从设置的 `lr` 进行余弦衰退。
 - `gradient_accumulation_steps`：梯度累积步数，模型实际的 batch_size 大小等于 `batch_size` * `gradient_accumulation_steps` * `num_of_GPUs`
 - `mixed_precision`：是否进行混合精度的训练，以降低显存的需求。混合精度训练通过在计算使用低精度，更新参数用高精度，来优化显存占用。并且 bf16（Brain Floating Point 16）可以有效降低 loss scaling 的异常情况，但该类型仅被部分硬件支持
 - `save_on_epoch_end`：是否在每一个 epoch 结束后都保存模型

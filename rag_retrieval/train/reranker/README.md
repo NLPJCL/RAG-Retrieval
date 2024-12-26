@@ -101,12 +101,12 @@ Multi-gpu training config_file:
 
 Model-related:
 - `model_name_or_path`: The name of the open-source reranker model or the local server location where it is downloaded. Examples: BAAI/bge-reranker-base, maidalun1020/bce-reranker-base_v1. Training from scratch is also possible, such as using BERT: hfl/chinese-roberta-wwm-ext and LLM: Qwen/Qwen2.5-1.5B.
-- `model_type`: Currently supports SeqClassificationRanker (models that can be loaded with AutoModelForSequenceClassification).
+- `model_type`: Currently supports bert_encoder or llm_decoder class models.
 - `max_len`: The maximum input length supported by the model.
 
 Dataset-related:
 - `train_dataset`: The training dataset, format as described above.
-- `val_dataset`: The validation dataset, same format as the training dataset.((If not, just set it to empty))
+- `val_dataset`: The validation dataset, same format as the training dataset.(If not, just set it to empty)
 - `max_label`: The maximum label in the dataset, default is 1.
 - `min_label`: The minimum label in the dataset, default is 0.
 
