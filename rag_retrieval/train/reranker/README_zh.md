@@ -108,7 +108,7 @@ train_reranker.py \
 
 数据集方面：
 - `train_dataset`：训练数据集，格式见上文
-- `val_dataset`：验证数据集，格式同训练集.(如果没有，设置为空即可)
+- `val_dataset`：验证数据集，格式同训练集(如果没有，设置为空即可)
 - `max_label`：数据集中的最大 label，默认为 1
 - `min_label`：数据集中的最小 label，默认为 0
 
