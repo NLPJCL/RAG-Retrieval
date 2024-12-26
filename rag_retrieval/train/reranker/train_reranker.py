@@ -188,6 +188,7 @@ def main():
         num_training_steps=total_steps,
     )
 
+
     model, optimizer, lr_scheduler, train_dataloader, val_dataloader = (
         accelerator.prepare(
             model, optimizer, lr_scheduler, train_dataloader, val_dataloader

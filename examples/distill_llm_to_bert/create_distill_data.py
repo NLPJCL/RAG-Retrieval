@@ -37,9 +37,6 @@ if __name__=="__main__":
     ckpt_path = sys.argv[2]
     distill_train_data_path = sys.argv[3]
 
-    dataset_name = sys.argv[1]
-    train_on = sys.argv[2]
-    eval_on = sys.argv[3]
 
     train_data = get_train_data(input_train_data_path)
     
