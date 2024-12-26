@@ -27,7 +27,7 @@ pip install -r requirements.txt
 执行bash train_colbert.sh即可，下面是train_colbert.sh执行的代码。
 
 ```bash
-CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_colbert.py  \
+CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_colbert.py  \
 --model_name_or_path "hfl/chinese-roberta-wwm-ext" \
 --dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \

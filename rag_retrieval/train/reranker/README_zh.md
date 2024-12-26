@@ -26,10 +26,9 @@ pip install -r requirements.txt
 ```
 {"query": str, "pos": List[str], "neg":List[str], "pos_scores": List, "neg_scores": List}
 ```
-JSONL 文件中每一行是一个字典字符串，其中蕴含单个 query 下的所有文档。
-- `pos` 为 query 下所有的正样本。(当蒸馏或者训练数据是多级标签时，可以是正负样本)
+- `pos` 为 query 下所有的正样本。(当蒸馏或者训练数据是多级标签时，也可以是正负样本)
 - `neg` 为 query 下所有的负样本。
-- `pos_scores` 为 query 下所有正样本对应的得分。(当蒸馏或者数据是多级标签时，可以是正负样本的得分)
+- `pos_scores` 为 query 下所有正样本对应的得分。(当蒸馏或者数据是多级标签时，也可以是正负样本的得分)
 - `neg_scores` 为 query 下所有负样本对应的得分。
 
 
@@ -45,13 +44,13 @@ JSONL 文件中每一行是一个字典字符串，其中蕴含单个 query 下�
 ```
 {"query": str, "pos": List[str], "pos_scores": List[int|float]}
 ```
-对于这种数据,在训练中，我们采用均方损失 `MSE` 或者soft label 背景下的二分类交叉熵损失 `Binary Cross Entropy`来进行训练。在 [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) 目录下可以找到用 LLM 进行相关性打分标注的代码。
+对于这种数据,在训练中，我们采用均方损失 `MSE` 或者soft label 下的二分类交叉熵损失 `Binary Cross Entropy`来进行训练。在 [examples/distill_llm_to_bert](../../../examples/distill_llm_to_bert) 目录下可以找到用 LLM 进行相关性打分标注的代码。
 
-- 多分类数据：当标注数据中query和doc的相关性为多分类数据，即 label 为多级标签，（可能等于 0,1,2 等）,用户可以在pos_scores中指定相关性的级别。此时数据集内部会自动将离散的 label 均匀放缩到 0-1 分数区间中。例如数据集中存在三级标签（0，1，2），那么 label 0: 0，label 1: 0.5，label 2: 1
+- 多级标签数据：当标注数据中query和doc的相关性为多分类数据，即 label 为多级标签，（可能等于 0,1,2 等）,用户可以在pos_scores中指定相关性的级别。此时数据集内部会自动将离散的 label 均匀放缩到 0-1 分数区间中。例如数据集中存在三级标签（0，1，2），那么 label 0: 0，label 1: 0.5，label 2: 1
 ```
 {"query": str, "pos": List[str], "pos_scores": List[int|float]}
 ```
-对于这种数据，用户在设置数据集参数的时候需要手动指定 max label 和 min label（初始条件下 max label 默认为 1，min label 默认为 0）。在训练中，我们采用均方损失 `MSE` 或者soft label 背景下的二分类交叉熵损失 `Binary Cross Entropy`来进行训练。
+对于这种数据，用户在设置数据集参数的时候需要手动指定 max label 和 min label（初始条件下 max label 默认为 1，min label 默认为 0）。在训练中，我们采用均方损失 `MSE` 或者soft label 下的二分类交叉熵损失 `Binary Cross Entropy`来进行训练。
 
 
 # 训练

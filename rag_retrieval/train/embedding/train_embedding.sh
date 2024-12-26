@@ -11,7 +11,7 @@ if [ ! -d "./logs" ]; then
 fi
 
 #bert-based embedding (without mrl)
-CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
+CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
 --model_name_or_path "BAAI/bge-base-zh-v1.5" \
 --dataset "../../../example_data/t2rank_100.jsonl" \
 --output_dir "./output/t2ranking_100_example" \
@@ -29,7 +29,7 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../confi
  >./logs/t2ranking_100_example.log &
 
 #bert-based embedding (with mrl)
-#  CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
+#  CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
 # --model_name_or_path "BAAI/bge-base-zh-v1.5" \
 # --dataset "../../../example_data/t2rank_100.jsonl" \
 # --output_dir "./output/t2ranking_100_example_mrl1792" \
@@ -49,7 +49,7 @@ CUDA_VISIBLE_DEVICES="0"   nohup  accelerate launch --config_file ../../../confi
 #  >./logs/t2ranking_100_example_mrl1792.log &
 
 #llm-based embedding
-# CUDA_VISIBLE_DEVICES="0,1,2,3"   nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_embedding.py  \
+# CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_embedding.py  \
 # --model_name_or_path "Alibaba-NLP/gte-Qwen2-7B-instruct" \
 # --dataset "../../../example_data/t2rank_100.jsonl" \
 # --output_dir "./output/t2ranking_100_example" \

@@ -24,9 +24,9 @@ For ranking models, we support the following standard data format:
 ```
 {"query": str, "pos": List[str], "neg":List[str], "pos_scores": List, "neg_scores": List}
 ```
-- `pos` contains all positive samples for the query.(When distillation or training data is multi-level label, it can be positive and negative samples)
+- `pos` contains all positive samples for the query.(When distillation or training data is multi-level label, it can also be positive and negative samples)
 - `neg` contains all negative samples for the query.
-- `pos_scores` contains the scores corresponding to all positive sample documents for the query.(When distillation or data is multi-level label, it can be the scores of positive and negative samples)
+- `pos_scores` contains the scores corresponding to all positive sample documents for the query.(When distillation or data is multi-level label, it can also be the scores of positive and negative samples)
 - `neg_scores` contains the scores corresponding to all negative sample documents for the query.
 
 For the reranker tasks, the following types of data are supported for fine-tuning:
