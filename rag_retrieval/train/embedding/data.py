@@ -191,7 +191,6 @@ class EmbeddingDistillDataset(Dataset):
                     data_dic['query'] = data_dic["prompt_for_query"] + data_dic['query']
                 temp_dic = {}
                 temp_dic['query'] = data_dic['query']
-                temp_dic['idx'] = data_dic['idx']
                 train_data.append(temp_dic)
  
         return train_data
