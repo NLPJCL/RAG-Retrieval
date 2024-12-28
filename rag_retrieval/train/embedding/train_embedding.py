@@ -136,22 +136,19 @@ def main():
     accelerator.print(f'train_dataloader total is : {len(train_dataloader)}')
     accelerator.print(f'train_dataloader data_type is : {train_datast.data_type}')
 
-    optimizer = create_adamw_optimizer(model, lr=args.lr)
+    optimizer = create_adamw_optimizer(
+            model, lr=float(args.lr)
+    )
+    assert 0 <= args.warmup_proportion < 1
+    total_steps = (
+        len(train_dataloader) * args.epochs
+    ) // accelerator.gradient_state.num_steps
+    lr_scheduler = get_cosine_schedule_with_warmup(
+        optimizer=optimizer,
+        num_warmup_steps=int(args.warmup_proportion * total_steps),
+        num_training_steps=total_steps,
+    )
 
-    if args.warmup_proportion != 0:
-
-        total_steps = len(train_dataloader) * args.epochs // args.gradient_accumulation_steps
-        num_warmup_steps = int(args.warmup_proportion * total_steps)
-
-        # get_constant_schedule_with_warmup
-        lr_scheduler = get_cosine_schedule_with_warmup(
-            optimizer=optimizer,
-            num_warmup_steps=int(num_warmup_steps),
-            num_training_steps=total_steps,
-        )
-
-    else:
-        lr_scheduler = None
 
     model, optimizer, lr_scheduler,train_dataloader = accelerator.prepare(model, optimizer, lr_scheduler,train_dataloader)
 
