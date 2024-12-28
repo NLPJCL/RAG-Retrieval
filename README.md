@@ -30,6 +30,8 @@ The RAG-Retrieval offers end-to-end code for training, inference, and distillati
 
 # News
 
+- **12/29/2024**: We will release the training code for Jasper and Stella in the next few days. Thank you.
+
 - **10/21/2024**: RAG-Retrieval released two different methods for Reranker tasks based on LLM, as well as a method for distilling them into BERT. [Best Practices for LLM in Reranker Tasks? A Simple Experiment Report (with code)](https://zhuanlan.zhihu.com/p/987727357)
 
 - **6/5/2024**: Implementation of MRL loss for the Embedding model in RAG-Retrieval. [RAG-Retrieval: Making MRL Loss a Standard for Training Vector (Embedding) Models](https://zhuanlan.zhihu.com/p/701884479)
