@@ -52,6 +52,15 @@ pip install -r requirements.txt
  >./logs/t2ranking_100_example_llm.log &
 ```
 
+#stella  embedding distill ,fsdp(ddp) 参考：[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)
+```bash
+ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
+ --config_file ../../../config/default_fsdp.yaml \
+ train_embedding.py  \
+ --config ./config/distill_embedding.yaml  \
+ >./logs/t2ranking_100_example_bert_distill.log &
+```
+
 **参数解释**
 - model_name_or_path:开源的embedding模型的名称或下载下来的服务器位置.（只要其支持sentence-transformers来进行推理，就可以来进行微调。）
 - save_on_epoch_end:是否每个epoch都将模型存储下来。

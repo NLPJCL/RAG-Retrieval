@@ -1,0 +1,36 @@
+# Model
+model_name_or_path: "BAAI/bge-base-en-v1.5" #or Alibaba-NLP/gte-Qwen2-7B-instruct
+train_type: "distill"
+
+
+# Dataset
+train_dataset: "../../../example_data/t2rank_100.embedding"
+query_max_len: 512
+teatch_emebedding_dim: 3584
+
+
+# Training
+output_dir: "./output/t2ranking_100_example_distill"
+save_on_epoch_end: 1
+num_max_checkpoints: 5
+
+
+
+## Hyperparameters
+epochs: 5
+lr: 7e-5
+batch_size: 32
+seed: 666
+warmup_proportion: 0.1
+gradient_accumulation_steps: 3
+mixed_precision: fp16
+
+##mrl
+use_mrl: true
+mrl_dims: "256,512,1024,3584"
+
+
+
+## Logging
+log_interval: 10
+log_with: "wandb" # "wandb" or "tensorboard"

@@ -55,6 +55,15 @@ Run the `train_embedding.sh` script to start training. Below is the code of `tra
  >./logs/t2ranking_100_example_llm.log &
 ```
 
+#For stella  embedding distill,fsdp(ddp) refer to：[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)
+```bash
+ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
+ --config_file ../../../config/default_fsdp.yaml \
+ train_embedding.py  \
+ --config ./config/distill_embedding.yaml  \
+ >./logs/t2ranking_100_example_bert_distill.log &
+```
+
 **Parameter Explanation**
 - `model_name_or_path`: The name of the open-source embedding model or the local path where it has been downloaded. (As long as the model supports fine-tuning with the [sentence-transformers](https://www.sbert.net/) library, it can be used in our framework.)
 - `save_on_epoch_end`: Whether to save the model at the end of each epoch.
