@@ -87,20 +87,8 @@ def main():
     
     accelerator.init_trackers('colbert', config=vars(args))
 
-    accelerator.print(f'Model_name_or_path: {args.model_name_or_path}')
-    accelerator.print(f'Output dir: {args.output_dir}')
-    accelerator.print(f'Dataset: {args.dataset}')
-    accelerator.print(f'Start with seed: {args.seed}')
+    accelerator.print(f"Train Args from User Input: {vars(args)}")
 
-    accelerator.print(f'Batch size: {args.batch_size}')
-    accelerator.print(f'mixed_precision: {args.mixed_precision}')
-    accelerator.print(f'gradient_accumulation_steps: {args.gradient_accumulation_steps}')
-    accelerator.print(f'temperature: {args.temperature}')
-    accelerator.print(f'lr: {args.lr}')
-    accelerator.print(f'query_max_len: {args.query_max_len}')
-    accelerator.print(f'passage_max_len: {args.passage_max_len}')
-    accelerator.print(f'neg_nums: {args.neg_nums}')
-    accelerator.print(f'colbert_dim: {args.colbert_dim}')
 
 
     model = ColBERT.from_pretrained(

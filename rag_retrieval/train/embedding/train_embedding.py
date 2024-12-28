@@ -83,29 +83,12 @@ def main():
     )
 
     accelerator.init_trackers('embedding', config=vars(args))
-
-    accelerator.print(f'Batch size: {args.batch_size}')
-    accelerator.print(f'Start with seed: {args.seed}')
-    accelerator.print(f'Output dir: {args.output_dir}')
-    accelerator.print(f'Model_name_or_path: {args.model_name_or_path}')
-    accelerator.print(f'Dataset: {args.dataset}')
-    accelerator.print(f'mixed_precision: {args.mixed_precision}')
-
-    accelerator.print(f'gradient_accumulation_steps: {args.gradient_accumulation_steps}')
-    accelerator.print(f'temperature: {args.temperature}')
-    accelerator.print(f'log_with: {args.log_with}')
-    accelerator.print(f'neg_nums: {args.neg_nums}')
-
-    accelerator.print(f'query_max_len: {args.query_max_len}')
-    accelerator.print(f'passage_max_len: {args.passage_max_len}')
-    accelerator.print(f'use_mrl: {args.use_mrl}')
+    accelerator.print(f"Train Args from User Input: {vars(args)}")
 
     if args.use_mrl:
         mrl_dims = list(map(int, args.mrl_dims.split(",")))
     else:
         mrl_dims = []
-
-    accelerator.print(f'mrl_dims: {str(mrl_dims)}')
 
     model = Embedding.from_pretrained(
         model_name_or_path=args.model_name_or_path,
