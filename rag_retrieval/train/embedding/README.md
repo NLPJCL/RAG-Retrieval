@@ -38,43 +38,21 @@ Run the `train_embedding.sh` script to start training. Below is the code of `tra
 
 #For BERT-like models, using fsdp (ddp)
 ```bash
-CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
---model_name_or_path "BAAI/bge-base-zh-v1.5" \
---dataset "../../../example_data/t2rank_100.jsonl" \
---output_dir "./output/t2ranking_100_example" \
---batch_size 4 \
---lr 2e-5 \
---epochs 2 \
---save_on_epoch_end 1 \
---gradient_accumulation_steps 24  \
---log_with 'wandb' \
---warmup_proportion 0.1 \
---neg_nums 15 \
---temperature 0.02 \
---query_max_len 128 \
---passage_max_len 512 \
- >./logs/t2ranking_100_example.log &
+ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
+ --config_file ../../../config/default_fsdp.yaml \
+ train_embedding.py  \
+ --config ./config/training_embedding.yaml  \
+ >./logs/t2ranking_100_example_bert.log &
 ```
 
 #For LLM-like models, using deepspeed (zero1-3)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_embedding.py  \
---model_name_or_path "Alibaba-NLP/gte-Qwen2-7B-instruct" \
---dataset "../../../example_data/t2rank_100.jsonl" \
---output_dir "./output/t2ranking_100_example" \
---batch_size 4 \
---lr 2e-5 \
---epochs 2 \
---save_on_epoch_end 1 \
---gradient_accumulation_steps 24  \
---log_with 'wandb' \
---warmup_proportion 0.05 \
---neg_nums 15 \
---temperature 0.02 \
---query_max_len 256 \
---passage_max_len 1024 \
- >./logs/t2ranking_100_example.log &
+ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
+ --config_file ../../../config/deepspeed/deepspeed_zero2.yaml \
+ train_embedding.py  \
+ --config ./config/training_embedding.yaml  \
+ >./logs/t2ranking_100_example_llm.log &
 ```
 
 **Parameter Explanation**
@@ -84,6 +62,8 @@ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../con
 - `neg_nums`: Number of hard negative examples during training. It should not exceed the number of real negative examples (`neg:List[str]`) in the training dataset. If `neg_nums` is greater than the number of real negatives, real negatives will be resampled, and `neg_nums` negatives will be randomly selected. If `neg_nums` is less than the number of real negatives, `neg_nums` negatives will be randomly chosen during training. (Ignore this parameter if only query and positive documents are available.)
 - `batch_size`: Larger batch sizes result in more random negatives within the batch, improving performance. The actual number of negatives is `batch_size * neg_nums`.
 - `lr`: Learning rate, typically between 1e-5 and 5e-5.
+- `use_mrl` : Whether to use mlr training. (Add a new linear layer [hidden_size, max(mrl_dims)] to perform MRL training, refer to [Matryoshka Representation Learning](https://arxiv.org/abs/2205.13147), use MRL-E by default)
+- `mrl_dims` : List of mrl dimensions to train, for example, "128, 256, 512, 768, 1024, 1280, 1536, 1792".
 
 For BERT-like models, fsdp is used by default to support multi-GPU training. Here are example configuration files:
 - [default_fsdp](https://github.com/NLPJCL/RAG-Retrieval/blob/master/config/default_fsdp.yaml). Use this configuration file for training a embedding model from scratch based on `chinese-roberta-wwm-ext`.

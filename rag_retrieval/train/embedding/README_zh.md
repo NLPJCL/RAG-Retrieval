@@ -36,43 +36,20 @@ pip install -r requirements.txt
 
 #bert类模型,fsdp(ddp)
 ```bash
-CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../config/default_fsdp.yaml train_embedding.py  \
---model_name_or_path "BAAI/bge-base-zh-v1.5" \
---dataset "../../../example_data/t2rank_100.jsonl" \
---output_dir "./output/t2ranking_100_example" \
---batch_size 4 \
---lr 2e-5 \
---epochs 2 \
---save_on_epoch_end 1 \
---gradient_accumulation_steps 24  \
---log_with 'wandb' \
---warmup_proportion 0.1 \
---neg_nums 15 \
---temperature 0.02 \
---query_max_len 128 \
---passage_max_len 512 \
- >./logs/t2ranking_100_example.log &
+ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
+ --config_file ../../../config/default_fsdp.yaml \
+ train_embedding.py  \
+ --config ./config/training_embedding.yaml  \
+ >./logs/t2ranking_100_example_bert.log &
 ```
 
 #llm类模型,deepspeed(zero1-3)
-
 ```bash
-CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../config/deepspeed/deepspeed_zero2.yaml train_embedding.py  \
---model_name_or_path "Alibaba-NLP/gte-Qwen2-7B-instruct" \
---dataset "../../../example_data/t2rank_100.jsonl" \
---output_dir "./output/t2ranking_100_example" \
---batch_size 4 \
---lr 2e-5 \
---epochs 2 \
---save_on_epoch_end 1 \
---gradient_accumulation_steps 24  \
---log_with 'wandb' \
---warmup_proportion 0.05 \
---neg_nums 15 \
---temperature 0.02 \
---query_max_len 256 \
---passage_max_len 1024 \
- >./logs/t2ranking_100_example.log &
+ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
+ --config_file ../../../config/deepspeed/deepspeed_zero2.yaml \
+ train_embedding.py  \
+ --config ./config/training_embedding.yaml  \
+ >./logs/t2ranking_100_example_llm.log &
 ```
 
 **参数解释**
@@ -82,6 +59,10 @@ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch --config_file ../../../con
 - neg_nums：训练过程中难负例的数量，其不应该超过训练数据集中真实负例neg:List[str]的个数，如果neg_nums大于真实的负例的个数，那么就会对真实负例进行重采样，再随机选取neg_nums个负例。如果neg_nums小于真实负例的个数，那么在训练过程中会随机选择neg_nums个。(如果只有query和正例doc，可忽略该参数)
 - batch_size :越大batch内随机负例越多，效果越好。实际的负例个数为: batch_size*neg_nums
 - lr :学习率，一般1e-5到5e-5之间。
+- use_mrl ：是否使用mlr训练。（新增加一个线性层[hidden_size,max(mrl_dims)]来进行MRL训练，参考[Matryoshka Representation Learning
+](https://arxiv.org/abs/2205.13147)，默认使用MRL-E）
+- mrl_dims ：要训练的mrl维度列表,例如，"128, 256, 512, 768, 1024, 1280, 1536, 1792"。
+
 
 
 对于bert类模型，默认使用fsdp来支持多卡训练模型，以下是配置文件的示例：
