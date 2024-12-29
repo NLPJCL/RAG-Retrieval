@@ -73,11 +73,20 @@ class Trainer:
                 self.progress_bar.update()
                 self.current_step += 1
                 if batch_index % self.log_interval == 0:
+                    log_dic = {
+                        'lr':float(self.lr_scheduler.get_lr()[0]),
+                        'avg_loss': self.train_loss_tracker.loss,
+                        'current_loss': batch_output['loss'],
+                    }
+                    if 'cosine_loss' in batch_output:
+                        log_dic['current_cosine_loss'] = batch_output['cosine_loss']
+                    if 'similarity_loss' in batch_output:
+                        log_dic['current_similarity_loss'] = batch_output['similarity_loss']
+                    if 'triplet_loss' in batch_output:
+                        log_dic['current_triplet_loss'] = batch_output['triplet_loss']   
+
                     self.log_metrics(
-                        {
-                        'loss': self.train_loss_tracker.loss,
-                        'lr':float(self.lr_scheduler.get_lr()[0])
-                        },
+                        log_dic,
                         step=self.current_step,
                     )
 
