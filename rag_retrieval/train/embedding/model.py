@@ -261,22 +261,28 @@ class Embedding(nn.Module):
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 
         if use_mrl:
-            # 判断是否是mrl的模型。
-            if len(sentence_model._modules) == 3 and isinstance(sentence_model._last_module(), models.Dense):
-                print('sentence_transformers model is mrl model. ')
+            # If the embedding model last layer is Normalize, remove it and add a denser layer.
+            if isinstance(sentence_model._last_module(), models.Normalize):
+                print("the embedding model last layer is Normalize, remove it")
+                idx = len(sentence_model._modules.keys())   
+                sentence_model._modules.pop(str(idx-1))
+            #Determine whether the current model is an mrl model
+            #If the last layer is the denser layer, and we assume that the model is an mrl model by default.
+            if isinstance(sentence_model._last_module(), models.Dense):
+                print('sentence_transformers model is mrl model.')
                 scaling_layer_out_dim = sentence_model.get_sentence_embedding_dimension()
-
                 if scaling_layer_out_dim < max(mrl_dims):
                     print('max mrl_dims is greater than the maximum dimensions of the model')
                     mrl_dims = [dim for dim in mrl_dims if dim <= scaling_layer_out_dim]
                     print(f'reduce mrl_dims to {str(mrl_dims)}')
             else:
                 print('sentence_transformers model is not mrl model, init scaling_layer weight.')
-
                 in_features = sentence_model.get_sentence_embedding_dimension()
                 out_features = max(mrl_dims)
                 scaling_layer = models.Dense(in_features, out_features, bias=True, activation_function=torch.nn.modules.linear.Identity())
-                sentence_model._modules['2'] = scaling_layer
+                idx = len(sentence_model._modules.keys())
+                sentence_model._modules[str(idx)] = scaling_layer
+            print(sentence_model)
 
         embedding = cls(sentence_model, tokenizer, use_mrl, mrl_dims, temperature)
 
