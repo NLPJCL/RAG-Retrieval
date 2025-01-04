@@ -8,7 +8,7 @@ train_dataset: "../../../example_data/t2rank_100.jsonl"
 neg_nums: 15
 query_max_len: 128
 passage_max_len: 512
-
+shuffle: true
 
 
 # Training

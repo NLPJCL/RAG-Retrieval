@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 和bge类似，训练数据是一个jsonl文件，文件中每一行如下面的示例所示。其中`pos`是一组正例doc的文本，`neg`是一组负例doc的文本,`prompt_for_query`是某些向量模型需要在query前面添加的prompt。（可选的）。
 
-对于向量模型，支持以下三种数据进行微调：
+对于向量模型，支持以下四种数据进行微调：
 
 - query和正例doc，此时负例为batch内随机负例（即其它query的正例doc作为负例）。
 ```
@@ -29,6 +29,15 @@ pip install -r requirements.txt
 ```
 {"query": str, "pos": List[str], "scores":List[float], "prompt_for_query"(optional): str}
 ```
+
+- query和对应的teacher embedding。方法介绍：[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)，蒸馏数据的构造，参考：[examples/stella_embedding](../../../examples/stella_embedding/)
+   - text: 如下示例。
+   - teacher_embedding: 一个np.memmap file.
+```
+{"query": str, "prompt_for_query"(optional): str}
+``` 
+
+
 注："prompt_for_query" 可用于将指令信息融入到 query 中，例如"Instruct: 给定一个用户问题, 检索出对回答问题有帮助的文档片段\nQuery: "。
 # 训练
 
@@ -52,7 +61,7 @@ pip install -r requirements.txt
  >./logs/t2ranking_100_example_llm.log &
 ```
 
-#stella  embedding distill ,fsdp(ddp) 参考：[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)
+#distill teacher embedding, fsdp(ddp) 参考：[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)。
 ```bash
  CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
  --config_file ../../../config/default_fsdp.yaml \

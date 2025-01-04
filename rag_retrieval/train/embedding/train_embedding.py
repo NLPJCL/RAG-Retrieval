@@ -47,6 +47,9 @@ def parse_args():
             help="chose from [train, distill]")
 
     parser.add_argument("--train_dataset", help='trainset')
+    parser.add_argument("--train_dataset_vec", help='distillion trainset embedding')
+    parser.add_argument('--shuffle', action='store_true', help='if shuffle')
+
     parser.add_argument('--neg_nums', type=int, default=15)
     parser.add_argument('--query_max_len', type=int, default=128)
     parser.add_argument('--passage_max_len', type=int, default=512)
@@ -135,6 +138,7 @@ def main():
         )
         train_datast = EmbeddingDistillDataset(
             train_data_path=args.train_dataset,
+            train_dataset_vec_path=args.train_dataset_vec,
             tokenizer=tokenizer,
             query_max_len=args.query_max_len,
             teatch_emebedding_dim=args.teatch_emebedding_dim
@@ -145,7 +149,7 @@ def main():
         train_datast,
         batch_size=args.batch_size,
         collate_fn=train_datast.collate_fn,
-        shuffle=True,
+        shuffle=args.shuffle,
         num_workers=num_workers,
         pin_memory=True,
     )
@@ -165,7 +169,7 @@ def main():
         num_warmup_steps=int(args.warmup_proportion * total_steps),
         num_training_steps=total_steps,
     )
-
+    accelerator.print(lr_scheduler.lr_lambdas)
 
     model, optimizer, lr_scheduler,train_dataloader = accelerator.prepare(model, optimizer, lr_scheduler,train_dataloader)
 
