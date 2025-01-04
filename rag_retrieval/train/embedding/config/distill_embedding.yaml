@@ -8,7 +8,7 @@ train_dataset: "../../../example_data/t2rank_100.jsonl.text.jsonl"
 train_dataset_vec: "../../../example_data/t2rank_100.embedding.conan.xiaobu.mmap"
 query_max_len: 512
 teatch_emebedding_dim: 3584
-shuffle: true
+shuffle: false
 
 
 # Training
@@ -35,4 +35,4 @@ mrl_dims: "256,512,1024,1536,2048,2560,3072,3584"
 
 ## Logging
 log_interval: 10
-log_with: "tensorboard" # "wandb" or "tensorboard"
+log_with: "wandb" # "wandb" or "tensorboard"
