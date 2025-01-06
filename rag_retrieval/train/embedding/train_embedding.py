@@ -5,8 +5,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import torch
 from accelerate.utils import set_seed, ProjectConfiguration
 from model import Embedding
+from model_distill import DistillEmbedding
 from transformers import AutoTokenizer, get_cosine_schedule_with_warmup, get_constant_schedule_with_warmup
-from data import EmbeddingDataset
+from data import EmbeddingDataset, EmbeddingDistillDataset
 from torch.utils.data import DataLoader
 from trainer import Trainer
 from accelerate import Accelerator
@@ -39,11 +40,20 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str)
     parser.add_argument("--model_name_or_path", default='hfl/chinese-roberta-wwm-ext')
+    parser.add_argument(
+            "--train_type",
+            type=str,
+            default="train",
+            help="chose from [train, distill]")
 
     parser.add_argument("--train_dataset", help='trainset')
+    parser.add_argument("--train_dataset_vec", help='distillion trainset embedding')
+    parser.add_argument('--shuffle', action='store_true', help='if shuffle')
+
     parser.add_argument('--neg_nums', type=int, default=15)
     parser.add_argument('--query_max_len', type=int, default=128)
     parser.add_argument('--passage_max_len', type=int, default=512)
+    parser.add_argument('--teatch_emebedding_dim', type=int)
 
     parser.add_argument('--output_dir', help='output dir')
     parser.add_argument('--save_on_epoch_end', type=int, default=1, help='if save_on_epoch_end')
@@ -102,29 +112,44 @@ def main():
         mrl_dims = list(map(int, args.mrl_dims.split(",")))
     else:
         mrl_dims = []
-
-    model = Embedding.from_pretrained(
-        model_name_or_path=args.model_name_or_path,
-        temperature=args.temperature,
-        use_mrl=args.use_mrl,
-        mrl_dims=mrl_dims
-    )
-
+    
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
 
-    train_datast = EmbeddingDataset(
-        train_data_path=args.train_dataset,
-        tokenizer=tokenizer,
-        neg_nums=args.neg_nums,
-        query_max_len=args.query_max_len,
-        passage_max_len=args.passage_max_len,
-    )
+    if args.train_type=="train":
+        model = Embedding.from_pretrained(
+            model_name_or_path=args.model_name_or_path,
+            temperature=args.temperature,
+            use_mrl=args.use_mrl,
+            mrl_dims=mrl_dims
+        )
+        train_datast = EmbeddingDataset(
+            train_data_path=args.train_dataset,
+            tokenizer=tokenizer,
+            neg_nums=args.neg_nums,
+            query_max_len=args.query_max_len,
+            passage_max_len=args.passage_max_len,
+        )
+    elif args.train_type=="distill":
+        model = DistillEmbedding.from_pretrained(
+            model_name_or_path=args.model_name_or_path,
+            use_mrl=args.use_mrl,
+            mrl_dims=mrl_dims,
+            teatch_emebedding_dim=args.teatch_emebedding_dim
+        )
+        train_datast = EmbeddingDistillDataset(
+            train_data_path=args.train_dataset,
+            train_dataset_vec_path=args.train_dataset_vec,
+            tokenizer=tokenizer,
+            query_max_len=args.query_max_len,
+            teatch_emebedding_dim=args.teatch_emebedding_dim
+        )
+
     num_workers = 0
     train_dataloader = DataLoader(
         train_datast,
         batch_size=args.batch_size,
         collate_fn=train_datast.collate_fn,
-        shuffle=True,
+        shuffle=args.shuffle,
         num_workers=num_workers,
         pin_memory=True,
     )
@@ -144,7 +169,7 @@ def main():
         num_warmup_steps=int(args.warmup_proportion * total_steps),
         num_training_steps=total_steps,
     )
-
+    accelerator.print(lr_scheduler.lr_lambdas)
 
     model, optimizer, lr_scheduler,train_dataloader = accelerator.prepare(model, optimizer, lr_scheduler,train_dataloader)
 

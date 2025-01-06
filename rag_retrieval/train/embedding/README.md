@@ -14,7 +14,7 @@ After installing the dependencies, we will demonstrate how to fine-tune an open-
 
 Similar to bge models, the training data is a jsonl file, with each line formatted as shown below. Here, `pos` is a list of positive document texts, and `neg` is a list of negative document texts,`prompt_for_query` is a prompt that some embedding models need to add before the query. (optional)
 
-For embedding models, the following three types of data are supported for fine-tuning:
+For embedding models, the following four types of data are supported for fine-tuning:
 
 - Query and positive documents, where negative examples are randomly sampled from other queries' positive documents within the batch.
 ```
@@ -30,6 +30,13 @@ For embedding models, the following three types of data are supported for fine-t
 ```
 {"query": str, "pos": List[str], "scores":List[float], "prompt_for_query"(optional): str}
 ```
+- query and the corresponding teacher embedding. Method introduction: [infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1), distilled data construction, reference: [examples/stella_embedding](../../../examples/stella_embedding/)
+  - text: the following example.
+  - teacher_embedding: a np.memmap file.
+```
+{"query": str, "prompt_for_query"(optional): str}
+```
+
 Note: `prompt_for_query` can be used to incorporate instructional information into the query, e.g., "Instruct: Given a user query, retrieve documents helpful for answering the query\nQuery: ".
 
 # Training
@@ -53,6 +60,15 @@ Run the `train_embedding.sh` script to start training. Below is the code of `tra
  train_embedding.py  \
  --config ./config/training_embedding.yaml  \
  >./logs/t2ranking_100_example_llm.log &
+```
+
+#distill teacher embedding,fsdp(ddp) refer to：[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1).
+```bash
+ CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
+ --config_file ../../../config/default_fsdp.yaml \
+ train_embedding.py  \
+ --config ./config/distill_embedding.yaml  \
+ >./logs/t2ranking_100_example_bert_distill.log &
 ```
 
 **Parameter Explanation**

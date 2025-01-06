@@ -1,5 +1,6 @@
 # Model
 model_name_or_path: "BAAI/bge-base-zh-v1.5" #or Alibaba-NLP/gte-Qwen2-7B-instruct
+train_type: "train"
 
 
 # Dataset
@@ -7,7 +8,7 @@ train_dataset: "../../../example_data/t2rank_100.jsonl"
 neg_nums: 15
 query_max_len: 128
 passage_max_len: 512
-
+shuffle: true
 
 
 # Training

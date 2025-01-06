@@ -10,7 +10,6 @@ if [ ! -d "./logs" ]; then
     echo "mkdir logs"
 fi
 
-
 #bert-based embedding 
  CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
  --config_file ../../../config/default_fsdp.yaml \
@@ -25,6 +24,13 @@ fi
 #  train_embedding.py  \
 #  --config ./config/training_embedding.yaml  \
 #  >./logs/t2ranking_100_example_llm.log &
+
+#distill (stella method)
+#  CUDA_VISIBLE_DEVICES="0,1"   nohup  accelerate launch \
+#  --config_file ../../../config/default_fsdp.yaml \
+#  train_embedding.py  \
+#  --config ./config/distill_embedding.yaml  \
+#  >./logs/t2ranking_100_example_bert_distill.log &
 
 
 #bert-based embedding (without mrl)

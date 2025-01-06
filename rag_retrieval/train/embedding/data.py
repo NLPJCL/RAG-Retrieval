@@ -6,6 +6,8 @@ import tqdm
 import json
 import random
 import math
+import numpy as np
+
 
 
 class EmbeddingDataset(Dataset):
@@ -162,6 +164,69 @@ class EmbeddingDataset(Dataset):
 
         return tokens_batch
 
+class EmbeddingDistillDataset(Dataset):
+    def __init__(
+        self,
+        train_data_path,
+        train_dataset_vec_path,
+        tokenizer,
+        teatch_emebedding_dim,
+        query_max_len=512,
+        data_type="distill",
+    ):
+        self.tokenizer = tokenizer
+        self.query_max_len = query_max_len
+        self.train_data_text = self.read_train_data(train_data_path)
+
+        print(len(self.train_data_text))
+        self.train_data_embedding_mmap = np.memmap(train_dataset_vec_path, 
+            dtype='float32', mode='r', shape=(len(self.train_data_text), teatch_emebedding_dim))
+        
+        assert self.train_data_embedding_mmap[len(self.train_data_text)-1] is not None
+
+        self.collate_fn = self.collate_fn
+        self.data_type = data_type
+
+    def read_train_data(self, train_data_path):
+        train_data = []
+        with open(train_data_path) as f:
+            for line in tqdm.tqdm(f):
+                data_dic = json.loads(line.strip())
+                if "prompt_for_query" in data_dic and data_dic["prompt_for_query"]:
+                    data_dic['query'] = data_dic["prompt_for_query"] + data_dic['query']
+                temp_dic = {}
+                temp_dic['query'] = data_dic['query']
+                train_data.append(temp_dic)
+
+        return train_data
+
+    def __len__(self):
+        return len(self.train_data_text)
+
+    def __getitem__(self, idx):
+        self.train_data_text[idx]['embedding'] = self.train_data_embedding_mmap[idx].tolist()
+        return self.train_data_text[idx]
+
+    def collate_fn(self, batch):
+
+        all_querys = []
+        all_teacher_embeddings = []
+
+        for item in batch:
+            all_querys.append(item['query'])
+            all_teacher_embeddings.append(item['embedding'])
+        all_query_tokens = self.tokenizer(all_querys, padding='longest', truncation=True,
+                                          max_length=self.query_max_len, return_tensors='pt')
+        all_teacher_embeddings = torch.tensor(all_teacher_embeddings)
+        tokens_batch = {}
+        tokens_batch['query_input_ids'] = all_query_tokens['input_ids']
+        tokens_batch['query_attention_mask'] = all_query_tokens['attention_mask']
+
+        tokens_batch['teacher_embeddings'] = all_teacher_embeddings
+
+
+
+        return tokens_batch
 
 def test_EmbeddingDataset():
     train_data_path = '../../../example_data/t2rank_100.jsonl'
@@ -187,6 +252,33 @@ def test_EmbeddingDataset():
         print(batch['neg_doc_attention_mask'].size())
         break
 
+def test_EmbeddingDistillDataset():
+    train_data_path = '../../../example_data/t2rank_100.jsonl.text.jsonl'
+    train_dataset_vec_path="../../../example_data/t2rank_100.embedding.conan.xiaobu.mmap"
+
+
+
+    model_name_or_path = 'BAAI/bge-base-zh-v1.5'
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+
+    dataset = EmbeddingDistillDataset(train_data_path,train_dataset_vec_path, tokenizer,teatch_emebedding_dim=1792*2)
+
+
+    dataloader = DataLoader(dataset,
+                            batch_size=512,
+                            shuffle=False,
+                            collate_fn=dataset.collate_fn,
+                            )
+
+    print(len(dataloader))
+
+    for batch in tqdm.tqdm(dataloader):
+        print(batch['query_input_ids'])
+        print(tokenizer.decode(batch['query_input_ids'][0]))
+        print(batch['teacher_embeddings'])
+        break
+
 
 if __name__ == "__main__":
-    test_EmbeddingDataset()
+    test_EmbeddingDistillDataset()
