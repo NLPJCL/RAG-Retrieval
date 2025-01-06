@@ -28,7 +28,7 @@ RAG-Retrieval 提供了全链路的RAG检索模型微调(train)和推理(infer)�
 
 # 最新更新
 
-- 10/28/2024：我们将在未来几天发布 Jasper 和 Stella 的训练代码。
+- 10/28/2024：RAG-Retrieval发布Stella and jasper embedidng model 的核心训练代码（stage3）[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)
 
 - 10/21/2024: RAG-Retrieval发布基于LLM做Reranker任务的两种不同方法，以及将其蒸馏到bert中的方法。[LLM在Reranker任务上的最佳实践？A simple experiment report（with code）](https://zhuanlan.zhihu.com/p/987727357)
 

@@ -30,7 +30,7 @@ pip install -r requirements.txt
 {"query": str, "pos": List[str], "scores":List[float], "prompt_for_query"(optional): str}
 ```
 
-- query和对应的teacher embedding。方法介绍：[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)，蒸馏数据的构造，参考：[examples/stella_embedding](../../../examples/stella_embedding/)
+- query和对应的teacher embedding。方法介绍：[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)，蒸馏数据的构造，参考：[examples/stella_embedding_distill](../../../examples/stella_embedding_distill/)
    - text: 如下示例。
    - teacher_embedding: 一个np.memmap file.
 ```

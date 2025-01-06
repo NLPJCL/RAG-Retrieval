@@ -30,7 +30,7 @@ For embedding models, the following four types of data are supported for fine-tu
 ```
 {"query": str, "pos": List[str], "scores":List[float], "prompt_for_query"(optional): str}
 ```
-- query and the corresponding teacher embedding. Method introduction: [infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1), distilled data construction, reference: [examples/stella_embedding](../../../examples/stella_embedding/)
+- query and the corresponding teacher embedding. Method introduction: [infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1), distilled data construction, reference: [examples/stella_embedding_distill](../../../examples/stella_embedding_distill/)
   - text: the following example.
   - teacher_embedding: a np.memmap file.
 ```

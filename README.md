@@ -30,7 +30,7 @@ The RAG-Retrieval offers end-to-end code for training, inference, and distillati
 
 # News
 
-- **12/29/2024**: We will release the training code for Jasper and Stella in the next few days. Thank you.
+- **12/29/2024**: RAG-Retrieval released the core training code (stage3) of Stella and Jasper embedding model [infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)
 
 - **10/21/2024**: RAG-Retrieval released two different methods for Reranker tasks based on LLM, as well as a method for distilling them into BERT. [Best Practices for LLM in Reranker Tasks? A Simple Experiment Report (with code)](https://zhuanlan.zhihu.com/p/987727357)
 
