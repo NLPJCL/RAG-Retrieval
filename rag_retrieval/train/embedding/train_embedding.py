@@ -132,7 +132,6 @@ def main():
     elif args.train_type=="distill":
         model = DistillEmbedding.from_pretrained(
             model_name_or_path=args.model_name_or_path,
-            use_mrl=args.use_mrl,
             mrl_dims=mrl_dims,
             teatch_emebedding_dim=args.teatch_emebedding_dim
         )
