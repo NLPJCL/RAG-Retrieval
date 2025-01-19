@@ -25,11 +25,6 @@ The RAG-Retrieval offers end-to-end code for training, inference, and distillati
 ![ColBERT](pictures/models.png)
 
 
-# Gitsponsors
-
-[<img src="https://api.gitsponsors.com/api/badge/img?id=773093836" height="20">](https://api.gitsponsors.com/api/badge/link?p=B9A6KvI8V5kkCX3UDwPDSHfr5DBWDbwf/uDUz6wHomMT9p8wWViErqLAjlaZ2/2KdNlu4eVtPspSNfgAKp6aBA==)
-
-
 # Communication between communities
 
 [Join our WeChat group chat](https://www.notion.so/RAG-Retrieval-Roadmap-c817257e3e8a484b8850cac40a3fcf88)
