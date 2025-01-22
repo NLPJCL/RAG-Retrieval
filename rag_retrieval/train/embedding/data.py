@@ -204,8 +204,9 @@ class EmbeddingDistillDataset(Dataset):
         return len(self.train_data_text)
 
     def __getitem__(self, idx):
-        self.train_data_text[idx]['embedding'] = self.train_data_embedding_mmap[idx].tolist()
-        return self.train_data_text[idx]
+        embedding = self.train_data_embedding_mmap[idx].tolist()
+        query = self.train_data_text[idx]['query']
+        return {'query': query, 'embedding': embedding}
 
     def collate_fn(self, batch):
 
