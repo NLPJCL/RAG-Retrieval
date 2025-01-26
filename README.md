@@ -137,3 +137,18 @@ It is worth noting that the training set of the three open source models of bge 
 
 # License
 RAG-Retrieval is licensed under the [MIT License](https://github.com/NLPJCL/RAG-Retrieval/blob/master/LICENSE). 
+
+# Citation
+If you find this repository helpful, please cite our work:
+```bib
+@misc{zhang2025jasperstelladistillationsota,
+      title={Jasper and Stella: distillation of SOTA embedding models}, 
+      author={Dun Zhang and Jiacheng Li and Ziyang Zeng and Fulong Wang},
+      year={2025},
+      eprint={2412.19048},
+      archivePrefix={arXiv},
+      primaryClass={cs.IR},
+      url={https://arxiv.org/abs/2412.19048}, 
+}
+```
+
