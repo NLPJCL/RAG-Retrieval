@@ -131,12 +131,6 @@ The number with finetune at the end means that we used RAG-Retrieval to fine-tun
 
 It is worth noting that the training set of the three open source models of bge already includes T2-Reranking, and the data is relatively general, so the performance improvement of fine-tuning using this data is not significant. However, if the open source model is fine-tuned using a vertical field data set, the performance improvement will be greater.
 
-# Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=NLPJCL/RAG-Retrieval&type=Date)](https://star-history.com/#NLPJCL/RAG-Retrieval&Date)
-
-# License
-RAG-Retrieval is licensed under the [MIT License](https://github.com/NLPJCL/RAG-Retrieval/blob/master/LICENSE). 
 
 # Citation
 If you find this repository helpful, please cite our work:
@@ -151,4 +145,13 @@ If you find this repository helpful, please cite our work:
       url={https://arxiv.org/abs/2412.19048}, 
 }
 ```
+
+# Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=NLPJCL/RAG-Retrieval&type=Date)](https://star-history.com/#NLPJCL/RAG-Retrieval&Date)
+
+# License
+RAG-Retrieval is licensed under the [MIT License](https://github.com/NLPJCL/RAG-Retrieval/blob/master/LICENSE). 
+
+
 
