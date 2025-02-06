@@ -17,7 +17,7 @@
 RAG-Retrieval 提供了全链路的RAG检索模型微调(train)和推理(infer)以及蒸馏(distill)代码。
 - 对于微调，**支持微调任意开源的RAG检索模型**，包括向量模型（图a,bert-based,llm-based embedding）、迟交互式模型（图d,colbert）、重排序模型（图c,bert-based, llm-based reranker）。
 - 对于推理，RAG-Retrieval专注于重排序(reranker)，开发了一个轻量级的python库[rag-retrieval](https://pypi.org/project/rag-retrieval/),**提供统一的方式调用任意不同的RAG排序模型**。
-- 对于蒸馏，支持将基于LLM的reranker模型蒸馏到基于bert的reranker模型中。
+- 对于蒸馏，**支持向量模型和排序模型的蒸馏**，可以从较大的模型蒸馏到较小的模型（0.5b llm or bert-base)中。
 
 ![ColBERT](pictures/models.png)
 
@@ -28,7 +28,7 @@ RAG-Retrieval 提供了全链路的RAG检索模型微调(train)和推理(infer)�
 
 # 最新更新
 
-- 10/28/2024：RAG-Retrieval发布Stella and jasper embedidng model 的核心训练代码（stage3）[infgrad/jasper_en_vision_language_v1](https://huggingface.co/infgrad/jasper_en_vision_language_v1)
+- 12/29/2024：RAG-Retrieval发布Stella and jasper embedidng model 的核心训练代码（stage3）[Jasper and Stella: distillation of SOTA embedding models](https://arxiv.org/abs/2412.19048).
 
 - 10/21/2024: RAG-Retrieval发布基于LLM做Reranker任务的两种不同方法，以及将其蒸馏到bert中的方法。[LLM在Reranker任务上的最佳实践？A simple experiment report（with code）](https://zhuanlan.zhihu.com/p/987727357)
 
